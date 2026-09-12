@@ -1,0 +1,2802 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MIRROR INTERROGATION // 鏡像審訊</title>
+<style>
+:root{
+  --base:#080A0C;
+  --cyan:#00E5A3;
+  --amber:#E6A100;
+  --crimson:#FF2E4C;
+  --gray:#D1D5DB;
+  --line:#12241e;
+  --deep:#0a1210;
+
+  --fs-body:  clamp(16px, 1.75vmin, 19px);
+  --fs-obs:   clamp(15px, 1.6vmin, 17.5px);
+  --fs-btn:   clamp(15.5px, 1.6vmin, 18px);
+  --fs-hud:   clamp(13px, 1.35vmin, 15px);
+  --fs-small: clamp(12px, 1.25vmin, 14px);
+  --fs-title: clamp(22px, 2.8vmin, 32px);
+  --fs-name:  clamp(24px, 3vmin, 36px);
+
+  --lh-body: 1.95;
+  --lh-obs: 1.95;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  height:100%;width:100%;background:#000;overflow:hidden;
+  font-family:"Courier New","Consolas","Menlo","Microsoft JhengHei","PingFang TC",monospace;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+body{display:flex;align-items:center;justify-content:center;}
+
+#crt{
+  position:relative;
+  width:min(100vw, 177.78vh);
+  height:min(56.25vw, 100vh);
+  background:var(--base);
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  overflow:hidden;
+  color:var(--cyan);
+  box-shadow:0 0 90px rgba(0,229,163,.06), inset 0 0 160px rgba(0,0,0,.9);
+}
+
+.scanlines{
+  position:absolute;inset:0;z-index:60;pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,0,0,.26) 3px,
+    rgba(0,0,0,.26) 4px
+  );
+  mix-blend-mode:multiply;
+}
+.vig{
+  position:absolute;inset:0;z-index:59;pointer-events:none;
+  background:radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,.7) 100%);
+}
+.flick{animation:flick 6s infinite steps(1);}
+@keyframes flick{
+  0%,97%{opacity:1;}
+  97.5%{opacity:.86;}
+  98%{opacity:1;}
+  98.6%{opacity:.92;}
+  99%{opacity:1;}
+}
+
+/* ========== TOP ========== */
+#topbar{
+  display:flex;align-items:center;gap:18px;
+  padding:12px 20px;
+  border-bottom:1px solid var(--line);
+  font-size:var(--fs-hud);letter-spacing:.7px;
+  background:linear-gradient(180deg,var(--deep),var(--base));
+  color:#4a8071;
+  line-height:1.45;
+  flex-wrap:wrap;
+}
+#topbar b{color:var(--cyan);font-weight:600;}
+.tb-left{color:var(--cyan);letter-spacing:2px;font-size:var(--fs-hud);}
+.tb-left .dim{color:#2f5548;}
+.tb-spacer{flex:1;}
+#wave.ok{color:#00E5A3;}
+#wave.warn{color:var(--amber);}
+#wave.bad{color:var(--crimson);animation:blink .8s infinite;}
+@keyframes blink{50%{opacity:.25;}}
+
+#menuBtn{
+  background:transparent;
+  border:1px solid rgba(0,229,163,.35);
+  color:var(--cyan);
+  font-family:inherit;
+  font-size:var(--fs-hud);
+  letter-spacing:2px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .15s;
+}
+#menuBtn:hover{background:rgba(0,229,163,.1);border-color:var(--cyan);}
+
+/* ========== MAIN ========== */
+#main{
+  display:grid;
+  grid-template-columns:66% 34%;
+  overflow:hidden;
+  min-height:0;
+}
+#left{
+  display:flex;flex-direction:column;
+  overflow:hidden;min-height:0;
+  border-right:1px solid var(--line);
+  background:radial-gradient(ellipse at 30% 0%, rgba(0,229,163,.035), transparent 62%);
+}
+#histwrap{
+  flex:1 1 auto;min-height:0;overflow-y:auto;
+  padding:24px 30px 16px 30px;
+  scroll-behavior:smooth;
+}
+#history{display:flex;flex-direction:column;}
+
+.line{
+  margin-bottom:17px;line-height:var(--lh-body);font-size:var(--fs-body);
+  letter-spacing:.4px;white-space:pre-wrap;word-break:break-word;
+}
+.line.player{
+  color:var(--cyan);
+  border-left:3px solid rgba(0,229,163,.55);
+  padding-left:15px;
+  margin-top:9px;
+}
+.line.w{
+  color:#8fe6cb;padding-left:15px;
+  border-left:3px solid rgba(0,229,163,.12);
+}
+.line.sys{color:#4a8071;font-size:calc(var(--fs-body) * .88);letter-spacing:1px;}
+.line.narr{color:var(--gray);font-size:calc(var(--fs-body) * .96);opacity:.92;}
+.line.mem{color:var(--amber);}
+.line.danger{color:var(--crimson);}
+.line.head{
+  color:var(--amber);letter-spacing:3px;font-size:calc(var(--fs-body) * .92);
+  border-top:1px solid rgba(230,161,0,.25);
+  border-bottom:1px solid rgba(230,161,0,.25);
+  padding:10px 0;margin:24px 0 20px 0;
+  text-align:center;
+}
+.line.title{
+  color:var(--cyan);letter-spacing:10px;font-size:var(--fs-title);
+  text-align:center;margin:34px 0;opacity:.9;
+}
+.line.dead{color:var(--crimson);letter-spacing:1px;}
+
+.hoverable{
+  border-bottom:1px dashed rgba(230,161,0,.75);
+  cursor:help;transition:color .15s;
+}
+.hoverable:hover{color:var(--amber);}
+
+/* ========== DOCK ========== */
+#dock{
+  flex:0 0 auto;max-height:47%;overflow-y:auto;
+  border-top:1px solid var(--line);
+  background:linear-gradient(180deg,#070f0d,var(--base));
+  padding:16px 24px 20px 24px;
+}
+.dockhead{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:var(--fs-small);letter-spacing:1.5px;color:#4a8071;
+  padding-bottom:11px;margin-bottom:11px;
+  border-bottom:1px dashed rgba(0,229,163,.12);
+  gap:14px;flex-wrap:wrap;
+}
+.dockhead .dim{color:#2b4a41;letter-spacing:.8px;font-size:var(--fs-small);}
+#docklist{display:flex;flex-direction:column;gap:10px;}
+
+.qbtn{
+  display:block;width:100%;text-align:left;
+  background:transparent;
+  border:1px solid rgba(0,229,163,.16);
+  border-left:3px solid rgba(0,229,163,.4);
+  color:#a8f0d9;
+  font-family:inherit;font-size:var(--fs-btn);line-height:1.7;
+  padding:15px 18px;cursor:pointer;
+  letter-spacing:.35px;
+  transition:all .14s ease;
+  border-radius:1px;
+}
+.qbtn:hover{
+  background:rgba(0,229,163,.075);
+  border-left-color:var(--cyan);
+  color:#dffff2;
+  transform:translateX(3px);
+}
+.qbtn.choice{
+  border-left-color:rgba(230,161,0,.6);
+  color:#f0d9a3;
+}
+.qbtn.choice:hover{
+  background:rgba(230,161,0,.08);
+  border-left-color:var(--amber);
+  color:#fff0cc;
+}
+.qbtn.dangerous{border-left-color:rgba(255,46,76,.6);color:#ffb9c4;}
+.qbtn.dangerous:hover{background:rgba(255,46,76,.09);border-left-color:var(--crimson);color:#ffdbe1;}
+.docklabel{
+  font-size:var(--fs-small);letter-spacing:2px;color:var(--amber);
+  padding:5px 0 8px 2px;
+}
+.dock-dim{font-size:var(--fs-small);color:#2b4a41;letter-spacing:1px;padding:7px 2px;}
+
+/* ========== RIGHT ========== */
+#right{
+  position:relative;
+  padding:22px 22px;overflow-y:auto;
+  background:
+    linear-gradient(180deg,rgba(0,229,163,.02),transparent 30%),
+    repeating-linear-gradient(0deg,transparent 0 44px, rgba(0,229,163,.022) 44px 45px);
+  min-height:0;
+}
+.rhead{
+  font-size:var(--fs-small);letter-spacing:2px;color:#4a8071;
+  border-bottom:1px solid var(--line);
+  padding-bottom:11px;margin-bottom:18px;
+}
+#observe{font-size:var(--fs-obs);line-height:var(--lh-obs);}
+.obsline{
+  color:var(--gray);opacity:.86;margin-bottom:15px;
+  padding-left:13px;border-left:1px solid rgba(209,213,219,.16);
+  white-space:pre-wrap;
+}
+.obsline.amber{color:var(--amber);border-left-color:rgba(230,161,0,.45);}
+.obsline.red{color:#ff9aa8;border-left-color:rgba(255,46,76,.45);}
+.dim{color:#2b4a41;}
+
+#tooltip{
+  position:absolute;left:16px;right:16px;bottom:16px;
+  background:rgba(8,10,12,.97);
+  border:1px solid rgba(230,161,0,.5);
+  border-left:3px solid var(--amber);
+  color:var(--amber);
+  font-size:var(--fs-small);line-height:1.8;
+  padding:13px 16px;
+  opacity:0;transform:translateY(8px);
+  transition:opacity .18s,transform .18s;
+  pointer-events:none;letter-spacing:.4px;
+  z-index:40;
+}
+#tooltip.on{opacity:1;transform:translateY(0);}
+
+/* ========== BOTTOM ========== */
+#bottombar{
+  display:flex;align-items:center;gap:30px;
+  padding:14px 22px;
+  border-top:1px solid var(--line);
+  background:linear-gradient(0deg,var(--deep),var(--base));
+  font-size:var(--fs-hud);letter-spacing:1px;color:#4a8071;
+  line-height:1.45;
+  flex-wrap:wrap;
+}
+#bottombar b{color:var(--cyan);font-weight:600;letter-spacing:1.5px;}
+#rec{color:var(--crimson);}
+.bar{
+  display:inline-block;width:150px;height:8px;
+  border:1px solid rgba(0,229,163,.3);
+  margin-left:8px;vertical-align:middle;
+  position:relative;overflow:hidden;
+}
+.bar > i{
+  display:block;height:100%;width:0%;
+  background:linear-gradient(90deg,rgba(0,229,163,.5),var(--cyan));
+  transition:width .6s ease;
+}
+.bar.hot > i{background:linear-gradient(90deg,rgba(255,46,76,.5),var(--crimson));}
+.bar.hot{border-color:rgba(255,46,76,.4);}
+
+/* ========== OVERLAYS ========== */
+#fade{
+  position:absolute;inset:0;background:#000;opacity:0;
+  pointer-events:none;z-index:80;
+}
+#blacktext{
+  position:absolute;inset:0;z-index:81;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 8%;
+  color:#6e9086;
+  font-size:calc(var(--fs-body) * 1.08);
+  line-height:2.2;letter-spacing:1.6px;
+  text-align:center;white-space:pre-wrap;
+  opacity:0;transition:opacity 1.4s ease;
+}
+#blacktext.on{opacity:1;}
+
+#nameScreen{
+  position:absolute;inset:0;z-index:90;
+  background:#050607;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:22px;
+  padding:24px;
+  overflow-y:auto;
+}
+#nameScreen h1{
+  font-size:var(--fs-name);letter-spacing:14px;color:var(--cyan);font-weight:400;
+  text-shadow:0 0 22px rgba(0,229,163,.4);
+}
+#nameScreen h2{
+  font-size:var(--fs-hud);letter-spacing:5px;color:#4a8071;font-weight:400;
+  text-align:center;
+}
+#nameScreen p{
+  font-size:calc(var(--fs-body) * .92);color:#6e9086;letter-spacing:1.1px;line-height:2.05;
+  text-align:center;max-width:640px;
+}
+#nameInput{
+  background:transparent;
+  border:none;border-bottom:1px solid rgba(0,229,163,.5);
+  color:var(--cyan);
+  font-family:inherit;font-size:calc(var(--fs-body) * 1.3);letter-spacing:8px;
+  text-align:center;padding:10px 20px;outline:none;width:min(320px, 80vw);
+  caret-color:var(--cyan);
+}
+#nameInput::placeholder{color:#254238;letter-spacing:4px;font-size:var(--fs-body);}
+.titleBtns{
+  display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
+}
+.titleBtns button{
+  background:transparent;border:1px solid rgba(0,229,163,.4);
+  color:var(--cyan);font-family:inherit;
+  font-size:var(--fs-btn);letter-spacing:5px;
+  padding:13px 32px;cursor:pointer;transition:all .2s;
+}
+.titleBtns button:hover:not(:disabled){background:rgba(0,229,163,.09);border-color:var(--cyan);letter-spacing:7px;}
+.titleBtns button:disabled{opacity:.3;cursor:not-allowed;}
+.hint{font-size:var(--fs-small);color:#264238;letter-spacing:2px;text-align:center;}
+
+/* ========== OVERLAY (MENU / SAVE / GALLERY) ========== */
+#overlay{
+  position:absolute;inset:0;z-index:95;
+  background:rgba(0,0,0,.92);
+  display:none;
+  align-items:center;justify-content:center;
+  padding:22px;
+  overflow-y:auto;
+}
+#overlay.on{display:flex;}
+#overlayContent{
+  background:linear-gradient(180deg,#0a1210,#060809);
+  border:1px solid rgba(0,229,163,.25);
+  box-shadow:0 0 60px rgba(0,229,163,.08);
+  padding:26px 30px;
+  max-width:760px;
+  width:100%;
+  max-height:92vh;
+  overflow-y:auto;
+  color:var(--cyan);
+  position:relative;
+}
+#overlayTitle{
+  font-size:var(--fs-title);
+  letter-spacing:6px;
+  color:var(--cyan);
+  border-bottom:1px solid rgba(0,229,163,.2);
+  padding-bottom:16px;
+  margin-bottom:20px;
+  text-align:center;
+}
+#overlayBody{
+  font-size:var(--fs-body);
+  line-height:1.9;
+  color:#8fe6cb;
+}
+#overlayClose{
+  display:block;
+  margin:24px auto 0;
+  background:transparent;
+  border:1px solid rgba(0,229,163,.4);
+  color:var(--cyan);
+  font-family:inherit;
+  font-size:var(--fs-btn);
+  letter-spacing:4px;
+  padding:11px 32px;
+  cursor:pointer;
+  transition:all .15s;
+}
+#overlayClose:hover{background:rgba(0,229,163,.1);border-color:var(--cyan);}
+
+/* Menu buttons */
+.menuGrid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-top:8px;
+}
+.menuBtn{
+  background:transparent;
+  border:1px solid rgba(0,229,163,.2);
+  border-left:3px solid rgba(0,229,163,.5);
+  color:#a8f0d9;
+  font-family:inherit;
+  font-size:var(--fs-btn);
+  letter-spacing:3px;
+  padding:16px 20px;
+  text-align:left;
+  cursor:pointer;
+  transition:all .15s;
+}
+.menuBtn:hover{background:rgba(0,229,163,.08);border-left-color:var(--cyan);color:#dffff2;}
+.menuBtn .sub{
+  display:block;
+  font-size:var(--fs-small);
+  color:#4a8071;
+  letter-spacing:1px;
+  margin-top:5px;
+  font-weight:400;
+}
+
+/* Save slot */
+.saveSlot{
+  border:1px solid rgba(0,229,163,.16);
+  padding:16px 18px;
+  margin-bottom:12px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:12px;
+  align-items:center;
+}
+.saveSlotHeader{
+  font-size:var(--fs-hud);
+  letter-spacing:3px;
+  color:var(--cyan);
+  margin-bottom:6px;
+}
+.saveSlotInfo{
+  font-size:var(--fs-small);
+  color:#8fe6cb;
+  letter-spacing:.8px;
+  line-height:1.6;
+}
+.saveSlotInfo.dim{color:#3f6d5e;}
+.saveSlotBtns{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.saveSlotBtns button{
+  background:transparent;
+  border:1px solid rgba(0,229,163,.3);
+  color:var(--cyan);
+  font-family:inherit;
+  font-size:var(--fs-small);
+  letter-spacing:1.5px;
+  padding:8px 14px;
+  cursor:pointer;
+  transition:all .15s;
+}
+.saveSlotBtns button:hover:not(:disabled){background:rgba(0,229,163,.1);border-color:var(--cyan);}
+.saveSlotBtns button:disabled{opacity:.25;cursor:not-allowed;}
+
+/* Gallery */
+.galleryGrid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:12px;
+  margin-top:8px;
+}
+.galleryItem{
+  border:1px solid rgba(0,229,163,.15);
+  padding:16px 18px;
+  transition:all .15s;
+}
+.galleryItem.locked{
+  opacity:.4;
+  border-style:dashed;
+}
+.galleryItem.achieved{
+  border-left:3px solid var(--amber);
+  background:rgba(230,161,0,.04);
+}
+.galleryTitle{
+  font-size:var(--fs-hud);
+  letter-spacing:4px;
+  color:var(--amber);
+  margin-bottom:6px;
+}
+.galleryTitle.locked{color:#3f6d5e;letter-spacing:6px;}
+.gallerySub{
+  font-size:var(--fs-small);
+  color:#8fe6cb;
+  letter-spacing:1px;
+  line-height:1.6;
+}
+.galleryHint{
+  font-size:var(--fs-small);
+  color:#3f6d5e;
+  letter-spacing:.8px;
+  line-height:1.6;
+  margin-top:6px;
+  font-style:italic;
+}
+
+/* Summary */
+.summaryStat{
+  text-align:center;
+  padding:20px 0;
+  border-bottom:1px solid rgba(0,229,163,.15);
+  margin-bottom:20px;
+}
+.summaryStat .big{
+  font-size:calc(var(--fs-title) * 1.4);
+  color:var(--amber);
+  letter-spacing:8px;
+  margin-bottom:8px;
+}
+.summaryStat .sub{
+  font-size:var(--fs-hud);
+  color:#4a8071;
+  letter-spacing:3px;
+}
+.summaryItem{
+  border-left:3px solid rgba(230,161,0,.5);
+  padding:12px 0 12px 16px;
+  margin-bottom:14px;
+}
+.summaryItem .t{
+  color:var(--amber);
+  font-size:var(--fs-hud);
+  letter-spacing:4px;
+  margin-bottom:6px;
+}
+.summaryItem .h{
+  color:#8fe6cb;
+  font-size:var(--fs-body);
+  line-height:1.75;
+  letter-spacing:.5px;
+}
+
+/* ========== GLITCH ========== */
+.glitch{animation:glitchAnim .2s steps(2) 1;}
+@keyframes glitchAnim{
+  0%{filter:invert(1) hue-rotate(90deg);transform:translate(0);}
+  33%{filter:invert(1) contrast(2.4);transform:translate(-6px,2px) skewX(2deg);}
+  66%{filter:invert(.6) hue-rotate(-45deg);transform:translate(5px,-3px);}
+  100%{filter:none;transform:translate(0);}
+}
+.tear{
+  position:absolute;left:0;right:0;height:34px;
+  background:rgba(230,161,0,.25);mix-blend-mode:screen;
+  z-index:70;pointer-events:none;animation:tearMove .2s linear 1;
+}
+@keyframes tearMove{
+  0%{top:20%;opacity:1;}
+  50%{top:62%;opacity:.8;}
+  100%{top:88%;opacity:0;}
+}
+
+/* ========== SCROLLBAR ========== */
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:rgba(0,229,163,.03);}
+::-webkit-scrollbar-thumb{background:rgba(0,229,163,.2);border-radius:0;}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,229,163,.36);}
+
+.cursor::after{
+  content:"█";color:var(--cyan);animation:blink2 .7s steps(1) infinite;
+  margin-left:2px;font-size:.9em;
+}
+@keyframes blink2{50%{opacity:0;}}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1024px){
+  :root{
+    --fs-body:16.5px;
+    --fs-obs:15.5px;
+    --fs-btn:16px;
+    --fs-hud:13px;
+    --fs-small:12.5px;
+    --fs-title:24px;
+    --fs-name:26px;
+  }
+  #main{grid-template-columns:63% 37%;}
+  #histwrap{padding:20px 22px 12px 22px;}
+  #dock{padding:14px 20px 16px 20px;}
+  #right{padding:18px 18px;}
+  #topbar{gap:14px;padding:11px 16px;}
+  #bottombar{gap:22px;padding:13px 18px;}
+}
+
+@media (orientation: portrait) and (max-width: 820px){
+  :root{
+    --fs-body:17px;
+    --fs-obs:15.5px;
+    --fs-btn:16px;
+    --fs-hud:13.5px;
+    --fs-small:13px;
+    --fs-title:24px;
+    --fs-name:26px;
+    --lh-body:1.88;
+    --lh-obs:1.88;
+  }
+
+  body{background:var(--base);}
+
+  #crt{
+    width:100vw;
+    height:100dvh;
+    height:100vh;
+    box-shadow:none;
+    border-radius:0;
+    grid-template-rows:auto 1fr auto;
+  }
+
+  #topbar{
+    flex-wrap:wrap;
+    gap:7px 14px;
+    padding:10px 14px;
+    font-size:12.5px;
+    letter-spacing:.4px;
+  }
+  .tb-left{font-size:12.5px;letter-spacing:1.5px;}
+  .tb-spacer{display:none;}
+  #topbar > span{white-space:nowrap;}
+  #menuBtn{font-size:12.5px;padding:6px 12px;}
+
+  #main{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+  }
+  #right{
+    order:-1;
+    max-height:26dvh;
+    max-height:26vh;
+    border-right:none;
+    border-bottom:1px solid var(--line);
+    padding:14px 18px;
+    background:
+      linear-gradient(180deg,rgba(0,229,163,.02),transparent 60%),
+      repeating-linear-gradient(0deg,transparent 0 38px, rgba(0,229,163,.02) 38px 39px);
+  }
+  .rhead{margin-bottom:12px;padding-bottom:10px;font-size:12.5px;letter-spacing:1.6px;}
+  #observe{font-size:14.5px;line-height:1.9;}
+  .obsline{margin-bottom:12px;padding-left:11px;}
+
+  #left{
+    border-right:none;
+    min-height:0;
+  }
+  #histwrap{padding:18px 20px 12px 20px;}
+  .line{margin-bottom:15px;letter-spacing:.3px;}
+  .line.player{padding-left:13px;border-left-width:3px;}
+  .line.w{padding-left:13px;border-left-width:3px;}
+
+  #dock{
+    max-height:44vh;
+    max-height:44dvh;
+    padding:14px 18px 18px 18px;
+  }
+  .dockhead{flex-wrap:wrap;gap:5px 14px;font-size:12.5px;padding-bottom:10px;margin-bottom:10px;}
+  .dockhead .dim{display:none;}
+  #docklist{gap:10px;}
+  .qbtn{
+    font-size:16px;
+    padding:16px 16px;
+    line-height:1.65;
+  }
+  .qbtn:hover{transform:none;}
+
+  #bottombar{
+    flex-wrap:wrap;
+    gap:9px 20px;
+    padding:12px 18px;
+    font-size:12.5px;
+    letter-spacing:.6px;
+  }
+  .bar{width:110px;height:7px;}
+  #bottombar .tb-spacer{display:none;}
+  #bottombar > span{white-space:nowrap;}
+
+  #tooltip{
+    left:12px;right:12px;bottom:12px;
+    font-size:13px;line-height:1.75;
+    padding:12px 14px;
+  }
+
+  #nameScreen{
+    gap:20px;
+    padding:36px 24px;
+  }
+  #nameScreen h1{letter-spacing:10px;}
+  #nameScreen p{font-size:15px;line-height:1.9;letter-spacing:.8px;}
+  #nameInput{font-size:22px;letter-spacing:6px;padding:10px 18px;}
+  .titleBtns button{padding:13px 26px;letter-spacing:4px;}
+
+  #blacktext{padding:0 6%;font-size:16px;letter-spacing:1.2px;line-height:2.05;}
+
+  #overlayContent{padding:20px 18px;}
+  #overlayTitle{font-size:22px;letter-spacing:4px;padding-bottom:12px;margin-bottom:16px;}
+  .saveSlot{grid-template-columns:1fr;padding:14px 14px;}
+  .saveSlotBtns{justify-content:flex-end;}
+  .galleryGrid{grid-template-columns:1fr;}
+  .summaryItem{padding:10px 0 10px 14px;}
+}
+
+@media (orientation: landscape) and (max-height: 500px){
+  :root{
+    --fs-body:15.5px;
+    --fs-obs:14px;
+    --fs-btn:15px;
+    --fs-hud:12.5px;
+    --fs-small:12px;
+    --fs-title:20px;
+    --fs-name:22px;
+    --lh-body:1.8;
+  }
+  #main{grid-template-columns:68% 32%;}
+  #histwrap{padding:16px 20px 10px 20px;}
+  #dock{max-height:50%;padding:12px 18px 14px 18px;}
+  #right{padding:14px 16px;}
+  .rhead{margin-bottom:12px;padding-bottom:10px;}
+  #observe{font-size:13.5px;line-height:1.85;}
+  .obsline{margin-bottom:11px;}
+  #topbar{padding:9px 16px;gap:12px;}
+  #bottombar{padding:10px 16px;gap:20px;}
+  .bar{width:110px;height:6px;}
+}
+</style>
+</head>
+<body>
+
+<div id="crt" class="flick">
+  <div class="scanlines"></div>
+  <div class="vig"></div>
+
+  <header id="topbar">
+    <span class="tb-left">MIRROR INTERROGATION <span class="dim">// 鏡像審訊</span></span>
+    <span>系統時間: <b id="clock">DAY 1 — 09:00</b></span>
+    <span>剩餘問題: <b id="qleft">— / —</b></span>
+    <span class="tb-spacer"></span>
+    <span>監控波形: <span id="wave" class="ok">正常</span></span>
+    <button id="menuBtn">≡ 選單</button>
+  </header>
+
+  <main id="main">
+    <section id="left">
+      <div id="histwrap"><div id="history"></div></div>
+      <div id="dock">
+        <div class="dockhead">
+          <span>// 審訊終端 — 可選提問</span>
+          <span class="dim">問題一經發出即永久銷毀，不可重複</span>
+        </div>
+        <div id="docklist">
+          <div class="docklabel">[ 等待系統載入… ]</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="right">
+      <div class="rhead">// W 動態觀察與行為監控</div>
+      <div id="observe">
+        <div class="obsline dim">[ 尚未建立觀測連結 ]</div>
+      </div>
+      <div id="tooltip"></div>
+    </section>
+  </main>
+
+  <footer id="bottombar">
+    <span>心率: <b id="bpm">--</b> BPM</span>
+    <span>腦波異常度: <b id="brain">--</b>%<span class="bar" id="brainBar"><i></i></span></span>
+    <span class="tb-spacer" style="flex:1"></span>
+    <span>監聽狀態: <b id="rec">錄音中</b></span>
+  </footer>
+
+  <div id="fade"></div>
+  <div id="blacktext"></div>
+
+  <div id="overlay">
+    <div id="overlayContent">
+      <div id="overlayTitle"></div>
+      <div id="overlayBody"></div>
+      <button id="overlayClose">關 閉</button>
+    </div>
+  </div>
+
+  <div id="nameScreen">
+    <h2>GOVERNMENT INTERROGATION SYSTEM v4.7</h2>
+    <h1>鏡 像 審 訊</h1>
+    <p>
+      你是編號 KB-114 的審訊官。<br>
+      對面坐著代號「W」的恐怖分子——政府檔案的說法是這樣。<br>
+      你有三天的時間，二十七個問題，和一個空白的名字欄位。<br><br>
+      <span style="color:#2f5548">在開始之前，請先為自己命名。</span>
+    </p>
+    <input id="nameInput" type="text" maxlength="6" placeholder="輸入你的名字" autocomplete="off">
+    <div class="titleBtns">
+      <button id="newGameBtn">新 遊 戲</button>
+      <button id="continueBtn">繼 續</button>
+      <button id="titleGalleryBtn">結 局 圖 鑑</button>
+    </div>
+    <div class="hint">點擊畫面可跳過文字輸出</div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   基礎工具
+============================================================ */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+let typingSkip = false;
+document.addEventListener('click', (e) => {
+  // 不讓點擊 overlay 或按鈕時觸發 skip
+  const t = e.target;
+  if(t.closest && (t.closest('#overlay') || t.closest('button'))) return;
+  typingSkip = true;
+});
+document.addEventListener('touchstart', (e) => {
+  const t = e.target;
+  if(t.closest && (t.closest('#overlay') || t.closest('button'))) return;
+  typingSkip = true;
+}, {passive:true});
+
+/* --- WebAudio --- */
+let actx = null;
+function ac(){
+  if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } }
+  if(actx && actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function sfxSubmerge(){
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+  o.type='sine';
+  o.frequency.setValueAtTime(220, c.currentTime);
+  o.frequency.exponentialRampToValueAtTime(38, c.currentTime+0.95);
+  f.type='lowpass'; f.frequency.setValueAtTime(700, c.currentTime);
+  f.frequency.exponentialRampToValueAtTime(120, c.currentTime+0.95);
+  g.gain.setValueAtTime(0.0001, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.16, c.currentTime+0.05);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+1.0);
+  o.connect(f); f.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime+1.05);
+}
+function sfxClick(){
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type='square'; o.frequency.setValueAtTime(1400, c.currentTime);
+  g.gain.setValueAtTime(0.026, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+0.045);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime+0.05);
+}
+function sfxAlarm(){
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type='sawtooth';
+  o.frequency.setValueAtTime(90, c.currentTime);
+  o.frequency.linearRampToValueAtTime(220, c.currentTime+0.5);
+  g.gain.setValueAtTime(0.05, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+0.75);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime+0.8);
+}
+
+/* ============================================================
+   遊戲狀態
+============================================================ */
+const state = {};
+
+function resetState(){
+  state.day = 1;
+  state.used = {};
+  state.Trust_P = 10;
+  state.Kill_P = 20;
+  state.Know_Pw = 0;
+  state.Health_W = 100;
+  state.Grief_W = 0;
+  state.Know_Wp = 0;
+  state.GovSuspect = 0;
+  state.name = '小白鼠';
+  state.side = {};
+  state.lastTag = null;
+  state.streak = 0;
+  state.streakBonus = false;
+  state.tortureToday = false;
+  state.tortureEver = false;
+  state.askedCount = 0;
+  state.morningDone = {1:false, 2:false, 3:false};
+  state.midDone = {2:false, 3:false};
+  state.eveningDone = {1:false, 2:false};
+}
+resetState();
+
+/* ============================================================
+   存檔系統
+============================================================ */
+const SAVE_KEY = 'mi_slot_';
+const AUTO_KEY = 'mi_auto';
+const ENDINGS_KEY = 'mi_endings';
+
+function saveToSlot(n){
+  try {
+    localStorage.setItem(SAVE_KEY + n, JSON.stringify(state));
+    return true;
+  } catch(e){ return false; }
+}
+function loadFromSlot(n){
+  try {
+    const s = localStorage.getItem(SAVE_KEY + n);
+    return s ? JSON.parse(s) : null;
+  } catch(e){ return null; }
+}
+function clearSlot(n){
+  try { localStorage.removeItem(SAVE_KEY + n); } catch(e){}
+}
+function saveAuto(){
+  try { localStorage.setItem(AUTO_KEY, JSON.stringify(state)); } catch(e){}
+}
+function loadAuto(){
+  try {
+    const s = localStorage.getItem(AUTO_KEY);
+    return s ? JSON.parse(s) : null;
+  } catch(e){ return null; }
+}
+
+function getAchieved(){
+  try {
+    const s = localStorage.getItem(ENDINGS_KEY);
+    return s ? JSON.parse(s) : [];
+  } catch(e){ return []; }
+}
+function addAchieved(key){
+  const list = getAchieved();
+  if(!list.includes(key)){
+    list.push(key);
+    try { localStorage.setItem(ENDINGS_KEY, JSON.stringify(list)); } catch(e){}
+  }
+}
+
+function restoreState(save){
+  Object.keys(state).forEach(k => delete state[k]);
+  Object.assign(state, save);
+  if(!state.morningDone) state.morningDone = {1:false, 2:false, 3:false};
+  if(!state.midDone) state.midDone = {2:false, 3:false};
+  if(!state.eveningDone) state.eveningDone = {1:false, 2:false};
+}
+
+/* ============================================================
+   題庫 — 27 題
+============================================================ */
+const Q = {
+
+Q01:{
+  id:'Q01', tag:'pressure',
+  q:'先從基礎開始。你的組織名稱，以及你們在地下網路的節點分佈。',
+  eff:{Kill_P:5, Trust_P:-5},
+  reply:'組織？我們只是在尋找被你們關在籠子裡的家人。',
+  obs:'他笑了。那個弧度不叫笑。'
+},
+Q02:{
+  id:'Q02', tag:'memory', glitch:true,
+  q:'三年前的海域事件，檔案上寫的是「襲擊」。你對這個定性有什麼要補充的嗎？',
+  eff:{Know_Pw:5, Grief_W:5},
+  reply:'那不是襲擊……那是救援。可惜海水太冷，我把最重要的人弄丟了。',
+  obs:'他的喉結動了一下，像是在吞什麼很硬的東西。',
+  hover:{'海水':'【深層解析】海水＝撤離路線的代稱。西側海岸接頭點，退潮時可通行。'}
+},
+Q03:{
+  id:'Q03', tag:'memory',
+  q:'你左肩上的舊傷。法醫報告說，那是研究所防衛武器的制式口徑。',
+  eff:{Know_Pw:10, Know_Wp:10},
+  reply:'你看得很準。那是為了帶一隻迷路的小傢伙出來而留下的紀念。',
+  obs:'他把左手往袖口裡縮了半寸。'
+},
+Q04:{
+  id:'Q04', tag:'neutral',
+  q:'根據通聯紀錄，你的同夥還留在城裡。他們在等什麼？',
+  eff:{Trust_P:5, Know_Wp:5},
+  reply:'他們在等一個名字。只要那個人叫出自己的真名，他們就會發動一切。',
+  obs:'他的視線在你胸前的識別證上停了零點四秒。'
+},
+Q05:{
+  id:'Q05', tag:'torture',
+  q:'[開啟高壓電擊] 這能讓你的嘴巴變硬還是變軟？',
+  eff:{Health_W:-20, Kill_P:15, Grief_W:15},
+  reply:'……啊、呃——！你的手法……比研究所的自動注射器……還要生疏……',
+  obs:'鐵椅在地面上刮出三道白痕。他始終沒有別開視線。'
+},
+Q06:{
+  id:'Q06', tag:'neutral',
+  q:'投降的決策通常發生在戰場上。你在被捕前的行為模式顯示，你沒有抵抗到最後。為什麼？',
+  eff:{Trust_P:10, Know_Wp:10},
+  reply:'不站在這個位置，我怎麼能離你這麼近？',
+  obs:'他往前傾了三公分。鐵鍊拉直了。'
+},
+Q07:{
+  id:'Q07', tag:'memory',
+  q:'審訊記錄顯示你對特定的鎮靜劑成分有免疫。這在你們圈子裡很罕見。',
+  eff:{Know_Pw:10, Trust_P:5},
+  reply:'因為那種藥……我曾經每天親手調配給一隻白鼠喝。為了減輕他的痛苦。',
+  obs:'他說話時的語氣，像在唸一段禱詞。',
+  hover:{'鎮靜劑':'【深層解析】0.5cc 的鎮靜劑——當年 W 私下為小白鼠調配的緩和劑。亦是「我仍在照顧你」的信任信號。'}
+},
+Q08:{
+  id:'Q08', tag:'pressure',
+  q:'你認得我這身制服嗎？',
+  eff:{Kill_P:5, Grief_W:10},
+  reply:'我不認得這身皮，但我認得皮囊下那顆被洗乾淨的腦袋。',
+  obs:'他閉上眼睛，像在忍耐某種比電擊更痛的東西。'
+},
+Q09:{
+  id:'Q09', tag:'memory',
+  q:'檔案裡提到一種記憶回溯的實驗。你對這類研究熟悉嗎？',
+  eff:{Know_Pw:15, Know_Wp:15},
+  reply:'算。因為本能會記得。比如變身的習慣，比如對危險的直覺。',
+  obs:'他前傾身體，鐵鍊叮噹作響。'
+},
+
+Q10:{
+  id:'Q10', tag:'memory', glitch:true,
+  q:'你最近有沒有聞到什麼不該聞到的味道？比如某些氣味會突然變得很清晰。',
+  eff:{Know_Pw:20, Know_Wp:20, Grief_W:-10},
+  reply:'你想起來了？你還記得海鹽踩在腳下的聲音嗎？',
+  obs:'他的呼吸在兩秒內亂了拍子。這是三天以來第一次。',
+  hover:{'海鹽':'【深層解析】海鹽＝撤離路線。腳下的聲音＝退潮時沙粒的摩擦頻率，這是接頭暗號的一部分。'}
+},
+Q11:{
+  id:'Q11', tag:'torture',
+  q:'[注射吐真劑] 把你們外部救援團隊的聯絡頻率說出來。',
+  eff:{Health_W:-15, Kill_P:10, Trust_P:-10},
+  reply:'頻率……就是你被研究所編號的那天……你連這個都忘了嗎……',
+  obs:'他咬破了嘴唇。血沿著下巴滴在鐵桌上。'
+},
+Q12:{
+  id:'Q12', tag:'pressure',
+  q:'政府說你是個瘋狂的基因改造專家，你拿活體做實驗。你對這個指控有什麼要說的？',
+  eff:{Trust_P:-5, Grief_W:15},
+  reply:'我是罪人……但我唯一的罪，是沒有在第一天就帶你遠走高飛。',
+  obs:'他沒有反駁。他只是看著你，眼神空得嚇人。'
+},
+Q13:{
+  id:'Q13', tag:'memory',
+  q:'單體變身能力。技術上它能複製到什麼程度？記憶？情感？還是只有外表？',
+  eff:{Know_Pw:15, Know_Wp:10},
+  reply:'不能。變身只能複製外表，但當你變成對方最親近的人時，你的心會跟著一起疼。',
+  obs:'他的手在膝上蜷了一下。'
+},
+Q14:{
+  id:'Q14', tag:'care',
+  q:'監控室正看著我們的一舉一動，你的每一句話都會成為定罪依據。',
+  eff:{Trust_P:10},
+  reply:'那麼，請繼續審訊吧，審訊官大人。',
+  obs:'他的聲音變得平淡公事公辦，但右手在桌面下敲了兩下。'
+},
+Q15:{
+  id:'Q15', tag:'memory',
+  cond:() => state.Know_Pw > 30,
+  q:'你在被捕之前，有沒有給什麼人取過名字？或者被取過名字？',
+  eff:{Know_Pw:25},
+  reply:'（他凝視著你的眼睛。鐵鍊輕響。他無聲地、一個音節一個音節地用唇型，念出了兩個字——）',
+  obs:'那是你的名字。'
+},
+Q16:{
+  id:'Q16', tag:'torture',
+  q:'[剝奪睡眠] 連續 48 小時不睡覺，你的精神防線還能撐多久？',
+  eff:{Health_W:-20, Grief_W:20},
+  reply:'只要……只要你能清醒過來……我多久都能撐……',
+  obs:'他的眼神渙散，卻始終沒有離開你的方向。'
+},
+Q17:{
+  id:'Q17', tag:'care',
+  q:'如果我不是你要找的那個人，你會怎麼樣？',
+  eff:{Trust_P:10, Grief_W:10},
+  reply:'那我這條命，就當作是送給政府這座大樓的陪葬品。',
+  obs:'他苦笑了一下。這次是真的笑。'
+},
+Q18:{
+  id:'Q18', tag:'care',
+  q:'明天的審訊是最後期限，高層不會給我更多時間了。',
+  eff:{Trust_P:15, Know_Wp:15},
+  reply:'足夠了。三點鐘方向，潮汐退去的時候，船會開。',
+  obs:'他一邊說，一邊用三根手指整理了一下領口。',
+  hover:{'三點鐘方向的潮汐':'【深層解析】Day 3 下午 3 點，外部救援部隊切斷電源並發起攻堅的時間點。'}
+},
+
+Q19:{
+  id:'Q19', tag:'care',
+  q:'外部的人要怎麼確認目標已經成功被帶出？',
+  eff:{Know_Wp:20, Trust_P:15},
+  reply:'當審訊室的燈光熄滅，只要叫出那個名字，槍聲就會停下。',
+  obs:'他壓低了聲音。麥克風的底噪蓋過了幾個音節。',
+  hover:{'叫出那個名字':'【深層解析】名字＝玩家於開局輸入的姓名。叫出名字，代表「記憶完全復甦，允許發動救援」。'}
+},
+Q20:{
+  id:'Q20', tag:'pressure',
+  q:'這是處決同意書，只要我簽字，安樂死藥劑五分鐘內就會注入。',
+  eff:{Kill_P:20, Grief_W:25},
+  reply:'簽吧。死在你手裡，總好過死在那些研究員的解剖台上。',
+  obs:'他閉上眼。這是他第一次主動放棄與你對視。'
+},
+Q21:{
+  id:'Q21', tag:'memory',
+  q:'永遠維持人形——這種能力的副作用，技術部門一直沒有公開。',
+  eff:{Know_Pw:20},
+  reply:'代價是……你會忘記自己曾經是一隻自由的白鼠，忘記我撫摸你背脊的溫度。',
+  obs:'他顫抖著伸手，想摸你的臉，又縮了回去。',
+  hover:{'鏡子裡的倒影':'【深層解析】單體變身能力的副作用——永久鎖定人形後，精神分裂與自我懷疑將無法逆轉。'}
+},
+Q22:{
+  id:'Q22', tag:'care',
+  q:'你在三年前的一次行動中，未經授權帶走了一名實驗體。那是出於戰術判斷，還是別的什麼？',
+  eff:{Trust_P:20, Grief_W:-20},
+  reply:'這是我這輩子做過唯一正確的事。',
+  obs:'他的眼角流下眼淚，卻笑了。'
+},
+Q23:{
+  id:'Q23', tag:'torture',
+  q:'[使用最後的記憶毒素注射]',
+  eff:{Health_W:-40, Kill_P:30},
+  reply:'（他口吐鮮血，身體猛地弓起，然後整個人癱軟下去。他不再回應任何對話。）',
+  obs:'鐵桌上的血窪正在慢慢擴大。'
+},
+Q24:{
+  id:'Q24', tag:'care',
+  cond:() => !!state.side.s3,
+  q:'監控線路會在最後三分鐘出現二次備份干擾，那是最後機會。',
+  eff:{Know_Wp:25, Trust_P:20},
+  reply:'明白。我會撕開左手的護腕，露出傳感器。',
+  obs:'他微不可察地點了一下頭。'
+},
+Q25:{
+  id:'Q25', tag:'memory',
+  q:'你一直在觀察通風管線的走向。你在計算什麼？',
+  eff:{Know_Pw:15, Trust_P:15},
+  reply:'只要我們一起走出去，籠子就會碎掉。',
+  obs:'他站了起來。鐵椅向後滑了半公尺。',
+  hover:{'籠子':'【深層解析】籠子＝政府審訊室，也是政府本身。W 這句話的意思是「一起叛逃」。'}
+},
+Q26:{
+  id:'Q26', tag:'neutral',
+  q:'審訊結束了。恐怖分子 W，你還有什麼遺言？',
+  eff:{},
+  reply:'我的遺言，已經寫在你的名字裡了。',
+  obs:'他先是看著鏡頭，然後看著你。看了很久。'
+},
+Q27:{
+  id:'Q27', tag:'care',
+  cond:() => state.Know_Pw > 70 && state.Trust_P > 70,
+  q:'（將眼神移向他扣緊的左手袖口）……你握著的那張紙條，是給我的，還是給外面的那些人？',
+  eff:{Trust_P:10, Know_Wp:10},
+  reply:'（他的眼睛驟然亮起。他重重地敲擊了桌面三下——沉悶、規律、像是某種倒數。）',
+  obs:'監控室的燈，閃了一下。'
+}
+};
+
+const DAY_POOLS = {
+  1: ['Q01','Q02','Q03','Q04','Q05','Q06','Q07','Q08','Q09'],
+  2: ['Q10','Q11','Q12','Q13','Q14','Q15','Q16','Q17','Q18'],
+  3: ['Q19','Q20','Q21','Q22','Q23','Q24','Q25','Q26','Q27']
+};
+
+/* ============================================================
+   輸出引擎
+============================================================ */
+const histEl = $('history');
+const wrapEl = $('histwrap');
+
+function scrollBottom(){ wrapEl.scrollTop = wrapEl.scrollHeight; }
+
+function type(el, text, speed){
+  return new Promise(resolve => {
+    typingSkip = false;
+    let i = 0;
+    el.textContent = '';
+    el.classList.add('cursor');
+    function tick(){
+      if(typingSkip || i >= text.length){
+        el.textContent = text;
+        el.classList.remove('cursor');
+        typingSkip = false;
+        scrollBottom();
+        resolve();
+        return;
+      }
+      el.textContent += text[i++];
+      if(i % 3 === 0) scrollBottom();
+      setTimeout(tick, speed);
+    }
+    tick();
+  });
+}
+
+async function say(cls, text, speed){
+  const d = document.createElement('div');
+  d.className = 'line ' + cls;
+  histEl.appendChild(d);
+  await type(d, text, speed || 26);
+  scrollBottom();
+  return d;
+}
+
+function instant(cls, text){
+  const d = document.createElement('div');
+  d.className = 'line ' + cls;
+  d.textContent = text;
+  histEl.appendChild(d);
+  scrollBottom();
+  return d;
+}
+
+function applyHover(el, hover){
+  if(!hover) return;
+  let html = el.textContent;
+  for(const k in hover){
+    const safe = hover[k].replace(/"/g,'&quot;');
+    html = html.split(k).join('<span class="hoverable" data-tip="' + safe + '">' + k + '</span>');
+  }
+  el.innerHTML = html;
+}
+
+document.addEventListener('mouseover', e => {
+  const t = e.target.closest ? e.target.closest('.hoverable') : null;
+  const tip = $('tooltip');
+  if(t){ tip.textContent = t.dataset.tip; tip.classList.add('on'); }
+  else { tip.classList.remove('on'); }
+});
+document.addEventListener('mouseout', e => {
+  if(e.target.closest && e.target.closest('.hoverable')) $('tooltip').classList.remove('on');
+});
+document.addEventListener('touchstart', e => {
+  const t = e.target.closest ? e.target.closest('.hoverable') : null;
+  const tip = $('tooltip');
+  if(t){ tip.textContent = t.dataset.tip; tip.classList.add('on'); }
+}, {passive:true});
+document.addEventListener('touchend', () => {
+  setTimeout(() => $('tooltip').classList.remove('on'), 2600);
+}, {passive:true});
+
+async function observe(text, cls){
+  const box = $('observe');
+  const d = document.createElement('div');
+  d.className = 'obsline ' + (cls || '');
+  box.appendChild(d);
+  await type(d, text, 30);
+  box.scrollTop = box.scrollHeight;
+  while(box.children.length > 20) box.removeChild(box.firstChild);
+}
+
+/* ============================================================
+   HUD
+============================================================ */
+function updateHUD(){
+  const bpm = Math.round(62 + state.Kill_P * 0.78 + (state.Health_W < 40 ? 9 : 0) + (state.Grief_W > 60 ? 5 : 0));
+  $('bpm').textContent = String(clamp(bpm, 55, 168)).padStart(3,'0');
+
+  const brain = clamp(Math.round(state.Know_Pw), 0, 100);
+  $('brain').textContent = String(brain).padStart(2,'0');
+  const bb = $('brainBar');
+  bb.querySelector('i').style.width = brain + '%';
+  bb.classList.toggle('hot', brain > 65);
+
+  const w = $('wave');
+  if(state.GovSuspect >= 65){ w.textContent = '雜訊異常'; w.className = 'bad'; }
+  else if(state.GovSuspect >= 30){ w.textContent = '輕微干擾'; w.className = 'warn'; }
+  else { w.textContent = '正常'; w.className = 'ok'; }
+}
+
+function setClock(day, hhmm){ $('clock').textContent = 'DAY ' + day + ' — ' + hhmm; }
+function setQLeft(n, total){ $('qleft').textContent = n + ' / ' + total; }
+
+/* ============================================================
+   選擇介面
+============================================================ */
+let resolveQuestion = null;
+let resolveChoice = null;
+
+function renderQuestions(list){
+  const dock = $('docklist');
+  dock.innerHTML = '';
+  list.forEach(q => {
+    const b = document.createElement('button');
+    b.className = 'qbtn';
+    if(q.tag === 'torture') b.classList.add('dangerous');
+    b.textContent = q.q;
+    b.onclick = () => {
+      sfxClick();
+      const r = resolveQuestion;
+      resolveQuestion = null;
+      dock.innerHTML = '';
+      if(r) r(q.id);
+    };
+    dock.appendChild(b);
+  });
+}
+
+function waitForQuestion(list){
+  return new Promise(res => {
+    resolveQuestion = res;
+    renderQuestions(list);
+  });
+}
+
+function renderChoices(options, label){
+  const dock = $('docklist');
+  dock.innerHTML = '';
+  const lb = document.createElement('div');
+  lb.className = 'docklabel';
+  lb.textContent = '// ' + (label || '需要你做出決定');
+  dock.appendChild(lb);
+  options.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'qbtn choice' + (o.danger ? ' dangerous' : '');
+    b.textContent = o.t;
+    b.onclick = () => {
+      sfxClick();
+      const r = resolveChoice;
+      resolveChoice = null;
+      dock.innerHTML = '';
+      if(r) r(o.v);
+    };
+    dock.appendChild(b);
+  });
+  return new Promise(res => { resolveChoice = res; });
+}
+
+function clearDock(msg){
+  const dock = $('docklist');
+  dock.innerHTML = '';
+  if(msg){
+    const lb = document.createElement('div');
+    lb.className = 'docklabel';
+    lb.textContent = msg;
+    dock.appendChild(lb);
+  }
+}
+
+/* ============================================================
+   數值結算
+============================================================ */
+async function applyEffects(q){
+  const e = Object.assign({}, q.eff || {});
+  const isWarm = (q.tag === 'memory' || q.tag === 'care');
+  let note = null;
+
+  if(isWarm){
+    state.streak++;
+    if(state.streak >= 3 && !state.streakBonus){
+      state.streakBonus = true;
+      if(e.Know_Pw) e.Know_Pw = Math.round(e.Know_Pw * 1.5);
+      e.Grief_W = (e.Grief_W || 0) - 10;
+      note = '連續三個問題之後，他說話的速度放慢了半拍。像是終於確認了什麼。';
+    }
+  } else {
+    state.streak = 0;
+    state.streakBonus = false;
+  }
+
+  if(state.lastTag === 'torture' && (q.tag === 'care' || q.tag === 'memory')){
+    e.Know_Wp = (e.Know_Wp || 0) - 15;
+    e.Grief_W = (e.Grief_W || 0) + 20;
+    note = '他看著你，眼神冷了下去。他認為這是心理戰。';
+  }
+
+  if(state.Health_W < 40 && q.tag === 'care' && e.Trust_P){
+    e.Trust_P = e.Trust_P * 2;
+  }
+
+  for(const k in e){
+    state[k] = (state[k] || 0) + e[k];
+  }
+
+  state.Trust_P  = clamp(state.Trust_P, 0, 100);
+  state.Kill_P   = clamp(state.Kill_P, 0, 100);
+  state.Know_Pw  = clamp(state.Know_Pw, 0, 100);
+  state.Know_Wp  = clamp(state.Know_Wp, 0, 100);
+  state.Grief_W  = clamp(state.Grief_W, 0, 100);
+  state.Health_W = clamp(state.Health_W, 0, 100);
+  state.GovSuspect = clamp(state.GovSuspect, 0, 100);
+
+  if(q.tag === 'torture'){
+    state.tortureToday = true;
+    state.tortureEver = true;
+  }
+
+  state.lastTag = q.tag;
+  updateHUD();
+
+  if(note) await observe(note, 'amber');
+}
+
+/* ============================================================
+   記憶閃爍
+============================================================ */
+async function glitchFlash(){
+  const crt = $('crt');
+  const tear = document.createElement('div');
+  tear.className = 'tear';
+  crt.appendChild(tear);
+  crt.classList.add('glitch');
+  sfxSubmerge();
+  await sleep(210);
+  crt.classList.remove('glitch');
+  setTimeout(() => tear.remove(), 200);
+}
+
+/* ============================================================
+   提問流程
+============================================================ */
+async function askQuestion(qid){
+  const q = Q[qid];
+  state.used[qid] = true;
+  state.askedCount++;
+  clearDock('');
+
+  await say('player', '▶ ' + q.q);
+
+  if(q.glitch){
+    await glitchFlash();
+    await sleep(180);
+  }
+
+  const line = await say('w', q.reply);
+  if(q.hover) applyHover(line, q.hover);
+
+  await applyEffects(q);
+
+  if(q.obs) await observe(q.obs, q.glitch ? 'amber' : '');
+
+  if(qid === 'Q15'){
+    await sleep(400);
+    await say('mem', '——他念出的，是你的名字：' + state.name);
+    await observe('他念完之後，閉上了眼。像是在確認什麼終於回到原位。', 'amber');
+  }
+
+  if(qid === 'Q26'){
+    await sleep(300);
+    await say('sys', '[ 系統提示 ] 三日提問額度已進入最終結算程序。');
+  }
+
+  if(qid === 'Q27'){
+    await sleep(300);
+    await say('mem', '——直通【坦途】路線的暗號已經送出。');
+  }
+
+  saveAuto();
+}
+
+/* ============================================================
+   每日提問階段
+============================================================ */
+async function questionPhase(day){
+  const total = DAY_POOLS[day].length;
+
+  while(true){
+    if(state.Health_W <= 0) break;
+
+    const avail = DAY_POOLS[day]
+      .map(id => Q[id])
+      .filter(q => {
+        if(!q) return false;
+        if(state.used[q.id]) return false;
+        if(q.cond && !q.cond()) return false;
+        return true;
+      });
+
+    if(avail.length === 0) break;
+
+    setQLeft(avail.length, total);
+    updateHUD();
+
+    const qid = await waitForQuestion(avail);
+    await askQuestion(qid);
+    await checkSideEvents();
+
+    const asked = DAY_POOLS[day].filter(id => state.used[id]).length;
+    const hh = 9 + Math.min(asked, 8);
+    setClock(day, String(hh).padStart(2,'0') + ':4' + (asked % 6));
+  }
+
+  setQLeft(0, total);
+}
+
+/* ============================================================
+   支線事件
+============================================================ */
+async function checkSideEvents(){
+  const s = state;
+  if(!s.side.s1 && s.Know_Pw > 30 && s.used.Q13){ s.side.s1 = true; await sideEvent1(); return; }
+  if(!s.side.s5 && s.Kill_P > 60){ s.side.s5 = true; await sideEvent5(); return; }
+  if(!s.side.s8 && s.Grief_W > 70 && s.Trust_P > 50){ s.side.s8 = true; await sideEvent8(); return; }
+  if(!s.side.s2 && s.Health_W < 40 && s.Health_W > 0){ s.side.s2 = true; await sideEvent2(); return; }
+  if(!s.side.s7 && s.Know_Pw > 50){ s.side.s7 = true; await sideEvent7(); return; }
+  if(!s.side.s3 && s.Trust_P > 40 && !s.tortureToday){ s.side.s3 = true; await sideEvent3(); return; }
+  if(!s.side.s4 && s.used.Q03 && s.used.Q07){ s.side.s4 = true; await sideEvent4(); return; }
+  if(!s.side.s6 && s.Know_Wp > 50){ s.side.s6 = true; await sideEvent6(); return; }
+  if(!s.side.s9 && s.Kill_P > 55 && s.Trust_P > 45){ s.side.s9 = true; await sideEvent9(); return; }
+}
+
+async function sideEvent1(){
+  instant('head', '── 支線事件：鏡像的裂縫 ──');
+  await say('narr', '你看著他。他的臉開始扭曲。');
+  await sleep(200);
+  await glitchFlash();
+  await say('narr', '有那麼一瞬間，坐在你對面的不是 W。');
+  await say('mem', '那是一張你記不起名字、卻讓胸口發緊的臉。');
+  await say('narr', '你猛地站起來，椅子向後倒。審訊中斷了十分鐘。');
+  await observe('你中斷審訊後，他沒有問為什麼。他只是把頭低下去，肩膀在輕微發抖。', 'red');
+}
+
+async function sideEvent2(){
+  instant('head', '── 支線事件：絕食 ──');
+  await say('narr', '營養液的注射器被推進來。他別過頭，牙關咬死。');
+  await observe('他的顴骨比昨天更明顯了。手背上的針孔還沒結痂。', 'amber');
+
+  const c = await renderChoices([
+    { t: '強行鼻飼。程序優先。', v: 'force', danger: true },
+    { t: '把注射器拿過來，親自餵他。', v: 'feed' }
+  ], '如何處理');
+
+  if(c === 'force'){
+    state.Kill_P = clamp(state.Kill_P + 20, 0, 100);
+    state.Grief_W = clamp(state.Grief_W + 10, 0, 100);
+    await say('narr', '你按著他的下顎把管子插進去。他沒有反抗，只是眼睛一直睜著。');
+    await observe('他沒有吞嚥。營養液從嘴角溢出來。', 'red');
+  } else {
+    state.Trust_P = clamp(state.Trust_P + 15, 0, 100);
+    state.Know_Wp = clamp(state.Know_Wp + 10, 0, 100);
+    await say('narr', '你蹲下來，把注射器抵在他唇邊。');
+    await say('w', '……你以前也是這樣餵我的。手勢一模一樣。');
+    await observe('他吞下去了。然後閉上眼，很久沒有睜開。', 'amber');
+  }
+  updateHUD();
+}
+
+async function sideEvent3(){
+  instant('head', '── 支線事件：五分鐘的盲區 ──');
+  await say('narr', '暴風雨切斷了外部線路。監控室的話筒裡只剩下雜訊。');
+  await say('sys', '[ 監控連線中斷 — 剩餘時間 05:00 ]');
+  await sleep(300);
+  await say('w', '（他迅速在桌上用指尖畫了一個圖案——三條線，一個圓。）');
+  await say('narr', '他畫完之後立刻用手掌抹掉。整個過程不到四秒。');
+  await observe('他畫圖的時候，眼睛一直盯著監控鏡頭，不是盯著你。', 'amber');
+  await say('mem', '你把那個圖案記了下來。這是外部救援隊的信號。');
+}
+
+async function sideEvent4(){
+  instant('head', '── 支線事件：舊照片 ──');
+  await say('narr', '你從檔案室帶回一張泛黃的合照。');
+  await say('narr', '照片上是一間白色實驗室，背景有幾個穿白袍的人。角落裡，有個模糊的影子——');
+  await say('narr', '一個孩子，或者一隻白鼠。W 站在那個影子旁邊。');
+  await sleep(300);
+  await say('w', '……你從哪裡拿到這個的。');
+  await observe('他的聲音第一次出現了裂痕。', 'red');
+  state.Grief_W = clamp(state.Grief_W + 12, 0, 100);
+  state.Know_Pw = clamp(state.Know_Pw + 5, 0, 100);
+  updateHUD();
+}
+
+async function sideEvent5(){
+  instant('head', '── 支線事件：失控 ──');
+  await say('narr', '你不記得自己是怎麼站起來的。');
+  await say('narr', '等你回過神，你的指節已經裂開了，他的嘴角在流血。');
+  await sleep(250);
+  await say('w', '你真的……完全不記得我了嗎？');
+  await observe('他吐出一口血，看著你的眼神裡沒有恨。只有一種很深的疲倦。', 'red');
+  state.Grief_W = clamp(state.Grief_W + 15, 0, 100);
+  updateHUD();
+}
+
+async function sideEvent6(){
+  instant('head', '── 支線事件：加密郵件 ──');
+  await say('narr', '你的個人終端震動了一下。一封沒有寄件人的加密郵件。');
+  await say('sys', '[ 附件：一隻白鼠咬破鐵籠的線條畫 ]');
+  await say('sys', '[ 內文：明晚，潮水最低的時候。 ]');
+  await say('narr', '你把它刪了。但那個畫面留在你的視網膜上。');
+  state.Know_Wp = clamp(state.Know_Wp + 5, 0, 100);
+  updateHUD();
+}
+
+async function sideEvent7(){
+  instant('head', '── 支線事件：戒斷 ──');
+  await say('narr', '你停掉了政府發放的抑制劑。');
+  await say('narr', '凌晨三點，你趴在洗手間的地板上吐到膽汁都出來了。');
+  await sleep(300);
+  await glitchFlash();
+  await say('mem', '然後你想起來了——');
+  await say('mem', '想起白色的手術燈，想起有人把你從解剖台上抱下來，想起那個人身上有海鹽的味道。');
+  await observe('你在鏡子裡看見自己的瞳孔。它在一瞬間變成了豎瞳，又變回來。', 'amber');
+  state.Know_Pw = clamp(state.Know_Pw + 12, 0, 100);
+  updateHUD();
+}
+
+async function sideEvent8(){
+  instant('head', '── 支線事件：桌底的字 ──');
+  await say('narr', '審訊暫停。他低頭整理袖口的時候，指尖在鐵桌底部停留了兩秒。');
+  await sleep(300);
+  await say('narr', '他離開後，你彎下腰去看。');
+  await say('mem', '乾涸的血寫著一行小字：');
+  await say('mem', '「小白鼠，這次換我來救你。」');
+  await observe('那行字很小。小到只有在這個角度才看得見。', 'amber');
+}
+
+async function sideEvent9(){
+  instant('head', '── 支線事件：側寫師 ──');
+  await say('narr', '心理側寫師推門進來。他沒有坐下。');
+  await say('w', '你的心率很不穩定，審訊官。');
+  await say('w', '別忘了——是誰給了你生命。也別忘了，是誰可以隨時收回。');
+  await say('narr', '他離開時，隨手把監控的錄音檔標記成了「待複核」。');
+  state.GovSuspect = clamp(state.GovSuspect + 15, 0, 100);
+  updateHUD();
+}
+
+async function sideEvent10(){
+  instant('head', '── 支線事件：最後的乾杯 ──');
+  await say('narr', '你獲准帶兩杯水進審訊室。');
+  await say('narr', '你把其中一杯推到他面前。鐵鍊的長度剛好夠他伸手。');
+  await sleep(250);
+  await say('w', '（他舉起紙杯，隔著桌子，與你的杯沿輕輕碰了一下。）');
+  await say('w', '敬自由。');
+  await observe('你們在監視鏡頭的正中央，完成了一場無人知曉的誓師。', 'amber');
+  state.Trust_P = clamp(state.Trust_P + 10, 0, 100);
+  updateHUD();
+}
+
+/* ============================================================
+   主線事件
+============================================================ */
+async function morningEvent(day){
+  if(day === 1){
+    instant('title', 'D A Y   1');
+    await say('sys', '[ 系統啟動 ] 政府地下審訊中心 — B3 層 — 第 7 審訊室');
+    await say('narr', '你推開門。房間裡只有一張鐵桌、兩把椅子，和一面單向鏡。');
+    await say('narr', '對面的人已經坐好了。雙手銬在桌面的鐵環上。');
+    await say('narr', '他抬起頭。');
+    await say('w', '早安，審訊官。');
+    await say('w', '你看起來……比我想像的年輕。');
+    await observe('他的視線在你的臉上停留。很久。久到有點失禮。');
+    await say('sys', '[ 提示 ] 每日可從終端選擇提問。問題一經發出即永久銷毀。');
+    setClock(1, '09:00');
+  }
+
+  if(day === 2){
+    instant('title', 'D A Y   2');
+    await say('narr', '清晨。你在洗手間用冷水洗臉。');
+    await sleep(300);
+    await glitchFlash();
+    await say('narr', '你抬頭看鏡子。');
+    await say('narr', '鏡子裡的倒影，有一瞬間不是你的臉。');
+    await say('mem', '那是一具白鼠的骨骼。胸腔在呼吸。');
+    await sleep(300);
+    await say('narr', '你扶住洗手台。太陽穴像被鑽開一樣疼。');
+    await observe('（鏡面已經恢復正常。但你的手還在抖。）', 'red');
+    await say('sys', '[ 警告 ] 您的生理數據出現異常波動。建議服用抑制劑。');
+    setClock(2, '08:50');
+  }
+
+  if(day === 3){
+    instant('title', 'D A Y   3');
+    await say('narr', '你走進指揮室。局長站在窗前，背對著你。');
+    await say('w', '高層已經判定 0731 失去情報價值。');
+    await say('w', '今天是最後一天。九個問題。問完之後，毒氣會自動注入。');
+    await say('w', '你可以問任何問題。但我不會再給你更多時間。');
+    await say('narr', '他轉過身，把一份文件推到你面前。上面蓋著紅色的執行章。');
+    await observe('你注意到，執行時間欄是空白的。還沒填。', 'red');
+
+    if(state.Health_W > 30 && state.Trust_P > 60){
+      await sleep(400);
+      await sideEvent10();
+    }
+    setClock(3, '08:40');
+  }
+}
+
+async function midEvent(day){
+  if(day === 2){
+    instant('head', '── 主線事件：酷刑抉擇 ──');
+    await say('sys', '[ 高層指令 ] 對 0731 施行高壓電擊。執行時間：即刻。');
+    await say('narr', '一個黑色的執行箱被推進審訊室。電極片上還留著上一次的焦痕。');
+    await say('narr', '監控鏡頭紅燈亮著。他們在看。');
+
+    const c = await renderChoices([
+      { t: '執行指令。這是程序。', v: 'exec', danger: true },
+      { t: '上報數據異常，偽造執行記錄。', v: 'fake' }
+    ], '你必須做出選擇');
+
+    if(c === 'exec'){
+      state.Kill_P = clamp(state.Kill_P + 15, 0, 100);
+      state.Health_W = clamp(state.Health_W - 20, 0, 100);
+      state.GovSuspect = clamp(state.GovSuspect - 10, 0, 100);
+      await say('narr', '你按下按鈕。他的身體弓起來，又摔下去。鐵椅在地上刮出尖銳的聲音。');
+      await say('w', '……沒關係。');
+      await say('w', '你以前……也受過這個。');
+      await observe('他暈過去了。嘴角有白沫。', 'red');
+    } else {
+      state.Trust_P = clamp(state.Trust_P + 15, 0, 100);
+      state.GovSuspect = clamp(state.GovSuspect + 10, 0, 100);
+      await say('narr', '你把電極片接到自己準備的電阻上。箱子嗡嗡響了十秒，然後停了。');
+      await say('narr', '他抬起頭，看著你。他懂了。');
+      await say('w', '……謝謝。');
+      await observe('監控室的紅燈滅了。你聽見話筒裡有人在低聲交談。', 'amber');
+    }
+    updateHUD();
+  }
+
+  if(day === 3){
+    instant('head', '── 主線事件：雙關的暗號 ──');
+    await say('narr', '他開始背誦一份偽造的供詞。');
+    await say('narr', '內容是關於「氣象觀測紀錄」的——風向、潮汐、能見度。');
+    await sleep(250);
+    await say('w', '……三點鐘方向的潮汐，退去時水位下降一米四。');
+    await say('w', '屆時，西側的海鹽田會露出可通行的通道。');
+    await observe('他念這些數字的時候，語速完全一致。這是排練過的。', 'amber');
+    await say('mem', '你明白了。這是劫獄路線的座標。');
+  }
+}
+
+async function eveningEvent(day){
+  if(day === 1){
+    instant('head', '── 主線事件：監控室的冷眼 ──');
+    await say('narr', '局長傳喚你。他的手邊放著一把解鎖授權的配槍。');
+    await say('w', '你的提問太軟了。');
+    await say('w', '這把槍留在這裡。你知道該怎麼用。');
+    await say('narr', '他沒有等你回答就走了。槍靜靜躺在桌上。');
+
+    const c = await renderChoices([
+      { t: '把槍收進腰間。', v: 'take', danger: true },
+      { t: '把槍留在桌上。', v: 'leave' }
+    ], '你的選擇');
+
+    if(c === 'take'){
+      state.Kill_P = clamp(state.Kill_P + 10, 0, 100);
+      state.GovSuspect = clamp(state.GovSuspect - 5, 0, 100);
+      await say('narr', '你把它別在腰後。金屬的重量壓著你的脊椎。');
+      await observe('走出辦公室時，你覺得那把槍比你想像中要燙。', 'red');
+    } else {
+      state.Trust_P = clamp(state.Trust_P + 5, 0, 100);
+      state.GovSuspect = clamp(state.GovSuspect + 10, 0, 100);
+      await say('narr', '你轉身離開。槍留在桌上，像一個沒有被接受的邀請。');
+      await observe('走廊盡頭的攝影機，跟著你轉了九十度。', 'amber');
+    }
+    updateHUD();
+  }
+
+  if(day === 2){
+    instant('head', '── 主線事件：海浪聲的夢 ──');
+    await say('narr', '你睡著了。');
+    await sleep(250);
+    await glitchFlash();
+    await say('mem', '夢裡有槍聲。有海浪。有人在叫你。');
+    await say('mem', '你聞到海鹽的味道。很鹹，很冷。');
+    await sleep(300);
+    await say('narr', '你醒過來的時候，發現自己站在書桌前。');
+    await say('narr', '桌上有一張紙，上面寫著兩個字——');
+    await say('mem', '你開局輸入的名字：' + state.name);
+    await observe('筆跡不是你的。或者說，不像是現在的你。', 'amber');
+  }
+}
+
+/* ============================================================
+   夜晚回聲
+============================================================ */
+async function nightEcho(day){
+  const fadeEl = $('fade');
+  const bt = $('blacktext');
+
+  fadeEl.style.transition = 'opacity 3.5s linear';
+  fadeEl.style.opacity = '1';
+  await sleep(3600);
+
+  let lines = [];
+  const s = state;
+
+  if(s.Kill_P > 60){
+    lines.push('……你聽見自己在喘。');
+    lines.push('夢裡的你在按一個按鈕。按鈕底下有人在喊你的名字。');
+    lines.push('你沒有停手。');
+  } else if(s.Trust_P > 55){
+    lines.push('……有人在你旁邊輕輕呼吸。');
+    lines.push('你記得那個頻率。很久以前，你發燒的時候，就是這個頻率陪了你一整夜。');
+    lines.push('你沒有睜開眼睛。因為睜開就沒有了。');
+  } else if(s.Know_Pw > 45){
+    lines.push('……海水漫過你的腳踝。');
+    lines.push('有人牽著你的手在跑。你跑不動，他就停下來等你。');
+    lines.push('他一次都沒有回頭催你。');
+  } else {
+    lines.push('……走廊的燈管在閃。');
+    lines.push('你數著自己的心跳。一下，兩下，三下。');
+    lines.push('數到第幾下的時候，你睡著了。');
+  }
+
+  if(s.Grief_W > 70){
+    lines.push('');
+    lines.push('隔壁房間有人在哭。很壓抑，幾乎聽不見。');
+    lines.push('你分不清那是誰。');
+  }
+
+  if(s.side.s8){
+    lines.push('');
+    lines.push('你夢見桌底那行字。');
+    lines.push('「小白鼠，這次換我來救你。」');
+    lines.push('字跡被血暈開，像一朵很小的花。');
+  }
+
+  if(s.side.s7){
+    lines.push('');
+    lines.push('你夢見手術燈。');
+    lines.push('白得刺眼。有一雙手把你從台上抱下來。');
+    lines.push('那雙手在發抖，卻抱得很緊。');
+  }
+
+  bt.classList.add('on');
+  for(const l of lines){
+    bt.textContent = l;
+    await sleep(1800);
+  }
+  await sleep(800);
+  bt.classList.remove('on');
+  await sleep(1500);
+
+  fadeEl.style.transition = 'opacity 2s ease-out';
+  fadeEl.style.opacity = '0';
+  await sleep(2100);
+  bt.textContent = '';
+}
+
+/* ============================================================
+   結局判定
+============================================================ */
+function determineEnding(){
+  const s = state;
+
+  if(s.Know_Pw >= 70 && s.Trust_P >= 70 && s.Know_Wp >= 70 && s.Health_W > 20 && s.Kill_P < 40){
+    return '坦途';
+  }
+  if(s.Kill_P >= 90){ return '憎恨'; }
+  if(s.Grief_W >= 85 && s.Know_Pw < 50){ return '虛妄'; }
+  if(s.GovSuspect >= 100){ return '深淵'; }
+  if(s.Know_Pw >= 60 && s.Trust_P >= 60 && s.Health_W > 30){ return '白鴿'; }
+  if(s.Know_Pw >= 60 && s.Trust_P >= 60 && s.Health_W > 0 && s.Health_W <= 30){ return '悲焰'; }
+  if(s.Know_Pw >= 60 && s.Health_W <= 0){ return '遺憾'; }
+  if(s.Health_W <= 0 && s.Know_Pw < 60){ return '遺憾'; }
+  return '未曾';
+}
+
+/* ============================================================
+   結局短篇小說
+============================================================ */
+const ENDINGS = {
+
+坦途: {
+  title: '坦 途',
+  sub: 'TRUE ENDING',
+  lines: [
+    '鐵門在液壓桿的呻吟裡裂開。',
+    '警笛從走廊盡頭壓過來，紅光在積水的瓷磚上一格一格地跳。',
+    '',
+    'W 用肩膀撞開你。鐵鏈從腕上滑落，砸在地上發出一聲鈍響。',
+    '他說：「跑。」',
+    '',
+    '你們衝進雨裡。',
+    '海風是鹹的，冷得像針。你跑了很久，久到膝蓋已經沒有知覺。',
+    '身後是槍聲。頭頂是烏雲。',
+    '三點鐘方向的探照燈掃過海面——',
+    '然後熄了。',
+    '',
+    '船在防波堤後面。引擎發出低沉的、幾乎聽不見的震動。',
+    '有人在船上伸出手。',
+    '',
+    '你回頭看了一眼那座灰白色的建築。',
+    '雨幕裡，它沉默著，像一口被遺棄的籠子。',
+    '',
+    'W 的手抓住你的手腕。他的手很涼，但很穩。',
+    '那隻手從研究所的解剖台上把你抱下來的時候，也是這個溫度。',
+    '',
+    '「小白鼠，」他說，「回家了。」',
+    '',
+    '你踏上甲板的時候，膝蓋終於撐不住，跪了下去。',
+    '他沒有扶你。他只是蹲下來，額頭靠著你的額頭。',
+    '雨水混著海水，沿著兩個人的臉頰往下流。',
+    '',
+    '引擎開始加速。',
+    '灰白色的建築在海平線上縮小，縮小，最後變成一個點。',
+    '',
+    'W 從口袋裡掏出一個東西——一枚生了鏽的識別牌。',
+    '上面刻著編號。',
+    '編號底下的兩個字，是你被取的名字。',
+    '',
+    '「我一直帶著，」他說。',
+    '「三年了。」',
+    '',
+    '——海平線的盡頭，天開始亮了。',
+    '這是三年以來，你第一次看見日出。',
+    '你沒有閉上眼睛。'
+  ]
+},
+
+憎恨: {
+  title: '憎 恨',
+  sub: 'BAD ENDING',
+  lines: [
+    '槍在你手裡。',
+    'W 沒有躲。',
+    '',
+    '他只是看著你，眼神裡有種近乎溫柔的東西——',
+    '那種東西，你在很久以前見過。在一個白色的房間裡。',
+    '',
+    '「你終於……」他輕聲說，「願意看我一眼了。」',
+    '',
+    '槍聲在密閉的房間裡炸開。',
+    '那聲音比你預期的要小。',
+    '血濺上單向鏡，順著玻璃往下淌，在鏡面上畫出一條紅色的線。',
+    '',
+    'W 向後倒下去。鐵椅翻了。鐵鏈在地上嘩啦作響。',
+    '',
+    '你站著。槍口還在冒煙。',
+    '你以為你會鬆一口氣。',
+    '',
+    '然後記憶回來了。',
+    '像海水灌進肺裡。',
+    '',
+    '你想起了研究所的白燈。',
+    '想起了有人用體溫焐熱你發抖的脊背。',
+    '想起了那隻手，那個溫度，那個聲音。',
+    '想起了那句「別怕，我在」。',
+    '',
+    '你想起了他的名字。',
+    '那不是 W。那是另一個名字——一個只有你叫過的、只有他答應過的名字。',
+    '',
+    '你跪在那灘血裡。',
+    '你抱著他的頭，一遍一遍地叫。',
+    '聲音從你的喉嚨裡出來，卻不像你的。',
+    '',
+    '他再也聽不見了。',
+    '',
+    '單向鏡的另一邊，有人在低聲交談。',
+    '有人在記錄。有人在鼓掌。',
+    '',
+    '審訊室外面，有人在敲門。',
+    '你沒有去開。',
+    '',
+    '你只是抱著他，一直坐著。',
+    '坐到那灘血開始變涼。',
+    '坐到你的膝蓋麻了。',
+    '坐到天亮了，又黑了。',
+    '',
+    '然後你才發現——',
+    '你已經記不起，自己叫什麼名字了。'
+  ]
+},
+
+虛妄: {
+  title: '虛 妄',
+  sub: 'BAD ENDING',
+  lines: [
+    '第三天早上，他不再看你了。',
+    '',
+    '他的眼睛望著天花板，瞳孔散得很開，像兩枚褪色的硬幣。',
+    '你叫他。他沒有反應。',
+    '你在他面前揮手。他也沒有反應。',
+    '',
+    '「我一直在等一個信號，」他說。',
+    '聲音很輕，像在自言自語。',
+    '「等一句只有我們兩個懂的話。」',
+    '',
+    '「可是沒有。」',
+    '',
+    '你張了張嘴，想說什麼，卻發現自己什麼也說不出來。',
+    '因為你確實不懂。',
+    '你不懂他一直在等什麼。',
+    '你不懂他為什麼要用那種眼神看你。',
+    '',
+    '他閉上眼睛。',
+    '你以為他只是休息。',
+    '',
+    '然後他咬斷了自己的舌頭。',
+    '',
+    '血從嘴角流出來。',
+    '不是噴濺，是靜靜地流。',
+    '像溪水，像退潮。',
+    '',
+    '你愣在那裡。',
+    '你沒有尖叫，沒有衝過去，沒有做任何事。',
+    '你只是站著，看著那股血慢慢滲進他領口的布料。',
+    '',
+    '然後，某個東西從你腦海深處裂開了。',
+    '',
+    '你想起海水的味道。',
+    '你想起你曾經是一隻白鼠。',
+    '你想起曾經有人為你調配 0.5 毫升的鎮靜劑。',
+    '你想起曾經有人對你說過「我不走」。',
+    '你想起那個人，現在正坐在你對面，嘴角的血已經不再流了。',
+    '',
+    '你趴在他身上，喊他的名字。',
+    '你喊了一遍，兩遍，三遍。',
+    '',
+    '走廊裡傳來腳步聲。',
+    '你聽見有人在說：「裡面的那個也瘋了。」',
+    '',
+    '你沒有聽見。',
+    '你還在喊他的名字。',
+    '你喊到嗓子啞了。',
+    '你喊到你相信自己會一直喊下去。'
+  ]
+},
+
+深淵: {
+  title: '深 淵',
+  sub: 'BAD ENDING',
+  lines: [
+    '第二十七分鐘，通風管道裡傳來輕微的嘶聲。',
+    '',
+    '不是風。',
+    '風不會有這種聲音。',
+    '',
+    'W 抬起頭。他的鼻翼動了動。',
+    '他的臉色變了。',
+    '',
+    '他看向你。眼神裡第一次出現了真正的恐懼——',
+    '不是為了他自己的。',
+    '',
+    '「屏住呼吸，」他說，「快。」',
+    '',
+    '太遲了。',
+    '',
+    '氰化物的氣味像杏仁。',
+    '那種甜膩的、不該存在於審訊室裡的味道，順著地板爬過來。',
+    '',
+    '你聽見監視器後面傳來一聲冷漠的：「執行完畢。」',
+    '',
+    '你的肺開始燒。',
+    '你的視線開始模糊。',
+    '',
+    '你伸手，握住了他的手。',
+    '他的手已經不再掙扎了。',
+    '',
+    '在最後的那幾秒裡，你聽見他說話。',
+    '聲音很輕，像風吹過海面。',
+    '',
+    '「這樣……也算一起走了。」',
+    '',
+    '你沒有回應。',
+    '你已經沒有力氣回應了。',
+    '',
+    '單向鏡的另一邊，有人在填寫報告：',
+    '「兩名實驗體，清理完畢。」',
+    '',
+    '報告的底層，還有一行用鉛筆寫的小字——',
+    '「疑似同時失去意識。無需額外解剖。」',
+    '',
+    '那一頁報告後來被歸檔了。',
+    '歸檔代號是 KB-114 與 W-0731。',
+    '沒有人知道，這兩個代號之間的距離，',
+    '曾經只有一張鐵桌的寬度。'
+  ]
+},
+
+白鴿: {
+  title: '白 鴿',
+  sub: 'SACRIFICE ENDING',
+  lines: [
+    '你把兩把手槍的保險都打開了。',
+    '',
+    '「你先走，」你說。',
+    '',
+    'W 看著你，很久。',
+    '那種目光很複雜。',
+    '你以為他會反駁。你以為他會說「一起走」。',
+    '',
+    '但他沒有。',
+    '他只是笑了。',
+    '那是你記憶裡最好看的一次笑。',
+    '',
+    '「你還是這樣，」他說。',
+    '「總把最難的那條路留給自己。」',
+    '',
+    '你沒有回答。',
+    '你把他推進通風井。',
+    '',
+    '他的身影在黑暗裡消失。',
+    '你聽見他落地、爬起、跑遠。',
+    '',
+    '然後你轉身。',
+    '背抵著鐵門。',
+    '',
+    '第一批特警衝進來的時候，你開了第一槍。',
+    '一個，兩個。',
+    '第二批衝進來的時候，你開了最後一槍。',
+    '三個。',
+    '',
+    '你沒有數。',
+    '你只是開槍。',
+    '',
+    '最後的最後，你聽見遠處傳來船笛。',
+    '長長的、低沉的。',
+    '',
+    '你靠著門，慢慢滑下去。',
+    '',
+    '肩膀燒得厲害。',
+    '肚子也涼涼的。',
+    '',
+    '你想起來自己叫什麼名字了。',
+    '不是 KB-114。',
+    '是那個他給你取的名字。',
+    '那個他每天都叫、你每天都聽、卻從來沒有回應過的名字。',
+    '',
+    '原來那個名字，是他給的。',
+    '原來你的生命，也是他給的。',
+    '',
+    '你閉上眼。',
+    '海風從門縫裡漏進來。',
+    '很鹹。',
+    '很冷。',
+    '',
+    '但是你在笑。'
+  ]
+},
+
+悲焰: {
+  title: '悲 焰',
+  sub: 'TRAGIC ENDING',
+  lines: [
+    '你們衝出審訊室的時候，警報已經拉響了。',
+    '',
+    'W 的腿在滴水。',
+    '他失血太多，跑不動。',
+    '你半背半拖著他在走廊裡衝。',
+    '腳下的血印一路延伸，像一條紅色的線。',
+    '',
+    '前面是出口。',
+    '外面是雨。',
+    '雨裡是海。',
+    '',
+    '「別停，」他說，「別停下。」',
+    '',
+    '你看見海了。',
+    '你也看見了三面合圍的槍口。',
+    '',
+    '探照燈亮了。',
+    '那一刻，你們兩個人的影子被拉得很長。',
+    '長得像是要一直延伸到海平線。',
+    '',
+    'W 轉過身，把你護在身後。',
+    '他的手很燙，燙得嚇人。',
+    '',
+    '「小白鼠，」他說，「我帶你出來了。」',
+    '',
+    '你張了張嘴，想說什麼。',
+    '你沒來得及說。',
+    '',
+    '槍聲和海浪聲一起響起來。',
+    '',
+    '你最後看見的，是他胸口那朵慢慢綻開的紅花。',
+    '還有他嘴角那個得逞的笑。',
+    '',
+    '他做到了。',
+    '他真的把你帶出來了。',
+    '',
+    '你伸出手，想抓住他。',
+    '你抓到了。',
+    '他的手，還是熱的。',
+    '',
+    '海浪打上來。',
+    '把你們兩個人的血，一起帶進海裡。',
+    '',
+    '潮水退去的時候，沙灘上什麼都沒有了。',
+    '只有一隻很舊的識別牌，',
+    '上面刻著兩個字。',
+    '那兩個字，後來沒有人認得。'
+  ]
+},
+
+遺憾: {
+  title: '遺 憾',
+  sub: 'REGRET ENDING',
+  lines: [
+    '你終於想起了全部。',
+    '',
+    '想起那個雨夜。',
+    '想起那支針。',
+    '想起那個把你從解剖台上抱下來的人。',
+    '想起他跟你說的第一句話、最後一句話。',
+    '',
+    '可是太晚了。',
+    '',
+    'W 的手已經涼了。',
+    '他的手腕上還留著電擊灼傷的痕跡——',
+    '是三天前你親手按下的那個按鈕。',
+    '',
+    '你把額頭貼在他冰冷的額頭上。',
+    '',
+    '「我記起來了，」你說。',
+    '「我記起來了。你看看我。」',
+    '',
+    '他沒有睜眼。',
+    '',
+    '你摸著他的臉。',
+    '你摸著他頸側那個被毒針刺穿的小孔。',
+    '你摸著他嘴角那塊血跡。',
+    '',
+    '那塊血是從三天前開始乾的。',
+    '',
+    '審訊室的燈還亮著。',
+    '麥克風還開著。',
+    '單向鏡的另一邊，有人在打字。',
+    '',
+    '你抱著他，一直坐到天亮。',
+    '沒有人來叫你。',
+    '沒有人來救你。',
+    '',
+    '往後的日子很長。',
+    '長到你每一天醒來，都要把這段記憶重新想一遍。',
+    '長到你每一天醒來，都要重新確認一次——',
+    '他確實不在了。',
+    '',
+    '政府給了你一個新的職位。',
+    '你接受了。',
+    '你繼續坐在那張鐵桌前。',
+    '對面是新的囚犯。',
+    '',
+    '你再也沒有問過任何人——',
+    '「如果一個人失去了所有記憶，他還算是原來的自己嗎？」',
+    '',
+    '因為你知道答案了。',
+    '你知道得太晚了。'
+  ]
+},
+
+未曾: {
+  title: '未 曾',
+  sub: 'NORMAL ENDING',
+  lines: [
+    '公開處決定在週三的清晨。',
+    '',
+    '你沒有去看。',
+    '',
+    '你在檔案室整理卷宗。',
+    '把編號 W-0731 的那一頁抽出來，放進碎紙機。',
+    '',
+    '機器嗡嗡響了三秒鐘，然後停了。',
+    '',
+    '你忽然覺得有點冷。',
+    '你把外套的扣子扣上一顆，繼續工作。',
+    '',
+    '那天下午，政府給你安排了一次記憶清洗。',
+    '例行程序。所有參與過高階審訊的人都要做。',
+    '',
+    '你躺在白色的房間裡。',
+    '看著頭頂的燈一點點變暗。',
+    '聽著儀器的嗡嗡聲，慢慢地變成海浪的聲音。',
+    '',
+    '你想起最後一個問題。',
+    '那個囚犯問你：',
+    '「如果一個人失去了所有記憶，他還算是原來的自己嗎？」',
+    '',
+    '你當時怎麼回答的？',
+    '',
+    '你想不起來了。',
+    '',
+    '水漫過你的腳踝。',
+    '水漫過你的膝蓋。',
+    '水漫過你的口鼻。',
+    '',
+    '很冷。',
+    '像海。',
+    '',
+    '——在意識完全沉入黑暗之前，',
+    '你聽見有人在很遠的地方叫了一聲。',
+    '那聲音很熟，像是某個你本來應該記得的名字。',
+    '',
+    '但你沒有抓住它。',
+    '它就這樣，連同你所有的過去，',
+    '一起沉進去了。'
+  ]
+}
+
+};
+
+/* ============================================================
+   結局播放
+============================================================ */
+async function endingPhase(){
+  clearDock('[ 審訊程序終止 ]');
+
+  instant('head', '── 終局 ──');
+  await say('sys', '[ 系統 ] 三日提問額度用盡。');
+  await sleep(900);
+  await say('sys', '[ 系統 ] 判定完成。');
+  await sleep(500);
+
+  const key = determineEnding();
+  const E = ENDINGS[key];
+
+  addAchieved(key);
+  saveAuto();
+
+  const fadeEl = $('fade');
+  fadeEl.style.transition = 'opacity 3.5s linear';
+  fadeEl.style.opacity = '1';
+  await sleep(3700);
+
+  sfxAlarm();
+
+  const bt = $('blacktext');
+  bt.classList.add('on');
+  bt.style.fontSize = 'calc(var(--fs-body) * 1.15)';
+  bt.style.letterSpacing = '6px';
+  bt.style.color = '#00E5A3';
+  bt.textContent = E.title;
+  await sleep(2400);
+
+  bt.style.fontSize = 'calc(var(--fs-hud) * .95)';
+  bt.style.letterSpacing = '8px';
+  bt.style.color = '#4a8071';
+  bt.textContent = E.sub;
+  await sleep(2000);
+
+  bt.style.fontSize = 'calc(var(--fs-body) * 1.02)';
+  bt.style.letterSpacing = '1.6px';
+  bt.style.color = '#8fa8a0';
+
+  for(const l of E.lines){
+    bt.textContent = l;
+    if(l === ''){ await sleep(900); continue; }
+    await sleep(Math.min(l.length * 60 + 650, 5500));
+  }
+
+  await sleep(2200);
+
+  bt.style.color = '#00E5A3';
+  bt.style.fontSize = 'calc(var(--fs-hud) * .95)';
+  bt.style.letterSpacing = '6px';
+  bt.textContent = '— END —';
+  await sleep(3200);
+
+  const achieved = getAchieved();
+  const ALL = ['坦途','憎恨','虛妄','深淵','白鴿','悲焰','遺憾','未曾'];
+  const allDone = ALL.every(k => achieved.includes(k));
+
+  if(allDone){
+    bt.style.fontSize = 'calc(var(--fs-body) * 1.05)';
+    bt.style.letterSpacing = '4px';
+    bt.style.color = '#E6A100';
+    bt.textContent = '所有結局已達成。正在開啟最終結算…';
+    await sleep(3000);
+    bt.classList.remove('on');
+    fadeEl.style.transition = 'opacity 1.2s';
+    fadeEl.style.opacity = '0';
+    await sleep(1400);
+    showSummaryOverlay();
+  } else {
+    bt.style.fontSize = 'calc(var(--fs-hud) * 1.05)';
+    bt.style.letterSpacing = '4px';
+    bt.style.color = '#4a8071';
+    bt.textContent = '已達成 ' + achieved.length + ' / 8 個結局';
+    await sleep(2600);
+
+    bt.style.fontSize = 'calc(var(--fs-hud) * .95)';
+    bt.style.letterSpacing = '3px';
+    bt.style.color = '#2f5548';
+    bt.textContent = '按 F5 重新開始審訊 · 或使用選單查看結局圖鑑';
+    await sleep(3000);
+
+    bt.style.fontSize = 'calc(var(--fs-hud) * .95)';
+    bt.style.letterSpacing = '3px';
+    bt.style.color = '#00E5A3';
+    bt.textContent = '（點擊畫面可關閉此結局 · 並使用選單重新開始）';
+  }
+}
+
+/* ============================================================
+   Overlay 系統
+============================================================ */
+function openOverlay(){
+  $('overlay').classList.add('on');
+}
+function closeOverlay(){
+  $('overlay').classList.remove('on');
+}
+$('overlayClose').onclick = () => { sfxClick(); closeOverlay(); };
+$('overlay').addEventListener('click', e => {
+  if(e.target === $('overlay')) closeOverlay();
+});
+
+function setOverlay(title, body){
+  $('overlayTitle').textContent = title;
+  $('overlayBody').innerHTML = '';
+  if(typeof body === 'string'){
+    $('overlayBody').textContent = body;
+  } else if(body instanceof Node){
+    $('overlayBody').appendChild(body);
+  }
+}
+
+/* --- 主選單 --- */
+function showMainMenu(){
+  setOverlay('// 系統選單', '');
+  const grid = document.createElement('div');
+  grid.className = 'menuGrid';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'menuBtn';
+  saveBtn.innerHTML = '存 檔<span class="sub">將進度寫入三個存檔槽之一</span>';
+  saveBtn.onclick = () => { sfxClick(); showSaveMenu('save'); };
+
+  const loadBtn = document.createElement('button');
+  loadBtn.className = 'menuBtn';
+  loadBtn.innerHTML = '讀 檔<span class="sub">從存檔槽或自動存檔讀取進度</span>';
+  loadBtn.onclick = () => { sfxClick(); showSaveMenu('load'); };
+
+  const galBtn = document.createElement('button');
+  galBtn.className = 'menuBtn';
+  galBtn.innerHTML = '結 局 圖 鑑<span class="sub">查看已達成的結局</span>';
+  galBtn.onclick = () => { sfxClick(); showGallery(); };
+
+  grid.appendChild(saveBtn);
+  grid.appendChild(loadBtn);
+  grid.appendChild(galBtn);
+  $('overlayBody').appendChild(grid);
+}
+
+/* --- 存檔 / 讀檔選單 --- */
+function showSaveMenu(mode){
+  const isSave = (mode === 'save');
+  setOverlay(isSave ? '// 存 檔' : '// 讀 檔', '');
+
+  const grid = document.createElement('div');
+  grid.style.display = 'flex';
+  grid.style.flexDirection = 'column';
+
+  for(let i = 1; i <= 3; i++){
+    const slot = loadFromSlot(i);
+    const div = document.createElement('div');
+    div.className = 'saveSlot';
+
+    const left = document.createElement('div');
+    const h = document.createElement('div');
+    h.className = 'saveSlotHeader';
+    h.textContent = '存檔 ' + i;
+    left.appendChild(h);
+    const info = document.createElement('div');
+    if(slot){
+      info.className = 'saveSlotInfo';
+      const usedCount = Object.keys(slot.used || {}).length;
+      info.textContent = slot.name + ' · DAY ' + slot.day + ' · 已問 ' + usedCount + ' 題';
+    } else {
+      info.className = 'saveSlotInfo dim';
+      info.textContent = '（空）';
+    }
+    left.appendChild(info);
+    div.appendChild(left);
+
+    const btns = document.createElement('div');
+    btns.className = 'saveSlotBtns';
+
+    if(isSave){
+      const sBtn = document.createElement('button');
+      sBtn.textContent = slot ? '覆蓋' : '存檔';
+      sBtn.onclick = () => {
+        sfxClick();
+        saveToSlot(i);
+        showSaveMenu('save');
+      };
+      btns.appendChild(sBtn);
+
+      if(slot){
+        const dBtn = document.createElement('button');
+        dBtn.textContent = '刪除';
+        dBtn.onclick = () => {
+          if(confirm('確定刪除此存檔？')){
+            sfxClick();
+            clearSlot(i);
+            showSaveMenu('save');
+          }
+        };
+        btns.appendChild(dBtn);
+      }
+    } else {
+      const lBtn = document.createElement('button');
+      lBtn.textContent = '讀取';
+      lBtn.disabled = !slot;
+      lBtn.onclick = () => {
+        if(!slot) return;
+        sfxClick();
+        closeOverlay();
+        loadAndRestore(slot);
+      };
+      btns.appendChild(lBtn);
+    }
+
+    div.appendChild(btns);
+    grid.appendChild(div);
+  }
+
+  // 自動存檔
+  const auto = loadAuto();
+  const autoDiv = document.createElement('div');
+  autoDiv.className = 'saveSlot';
+  autoDiv.style.marginTop = '16px';
+  autoDiv.style.borderLeftColor = 'rgba(230,161,0,.5)';
+
+  const autoLeft = document.createElement('div');
+  const autoH = document.createElement('div');
+  autoH.className = 'saveSlotHeader';
+  autoH.style.color = 'var(--amber)';
+  autoH.textContent = '自動存檔';
+  autoLeft.appendChild(autoH);
+  const autoInfo = document.createElement('div');
+  if(auto){
+    autoInfo.className = 'saveSlotInfo';
+    const usedCount = Object.keys(auto.used || {}).length;
+    autoInfo.textContent = auto.name + ' · DAY ' + auto.day + ' · 已問 ' + usedCount + ' 題';
+  } else {
+    autoInfo.className = 'saveSlotInfo dim';
+    autoInfo.textContent = '（尚未產生）';
+  }
+  autoLeft.appendChild(autoInfo);
+  autoDiv.appendChild(autoLeft);
+
+  const autoBtns = document.createElement('div');
+  autoBtns.className = 'saveSlotBtns';
+  if(!isSave){
+    const aBtn = document.createElement('button');
+    aBtn.textContent = '讀取';
+    aBtn.disabled = !auto;
+    aBtn.onclick = () => {
+      if(!auto) return;
+      sfxClick();
+      closeOverlay();
+      loadAndRestore(auto);
+    };
+    autoBtns.appendChild(aBtn);
+  }
+  autoDiv.appendChild(autoBtns);
+  grid.appendChild(autoDiv);
+
+  $('overlayBody').appendChild(grid);
+}
+
+/* --- 讀檔並還原 --- */
+async function loadAndRestore(save){
+  // 確認需要重新開始
+  if(resolveQuestion){
+    // 中斷目前流程
+    resolveQuestion('__abort__');
+    resolveQuestion = null;
+  }
+  if(resolveChoice){
+    resolveChoice('__abort__');
+    resolveChoice = null;
+  }
+
+  restoreState(save);
+  updateHUD();
+
+  // 清空畫面
+  $('history').innerHTML = '';
+  $('observe').innerHTML = '';
+
+  // 隱藏標題畫面
+  $('nameScreen').style.display = 'none';
+
+  await say('sys', '[ 系統 ] 已載入存檔 — DAY ' + state.day);
+  await sleep(600);
+
+  // 從當前天數繼續
+  await runDay(state.day);
+}
+
+/* --- 結局圖鑑 --- */
+function showGallery(){
+  const achieved = getAchieved();
+  const ALL = ['坦途','憎恨','虛妄','深淵','白鴿','悲焰','遺憾','未曾'];
+  const HINTS = {
+    '坦途': '記憶、信任、了解全部達標，且沒有讓殺意失控。',
+    '憎恨': '讓殺意突破極限。親手扣下扳機。',
+    '虛妄': '讓他的悲傷突破極限，而記憶卻沒有跟上。',
+    '深淵': '讓政府的疑心到達臨界。兩個人都會被清理。',
+    '白鴿': '記憶與信任足夠，但身體撐不過去。犧牲自己。',
+    '悲焰': '記憶與信任足夠，但他撐不過結局。一起殉難。',
+    '遺憾': '讓他死在你面前，而你終於想起一切。',
+    '未曾': '什麼都不做。什麼都不問。什麼都不記得。'
+  };
+
+  setOverlay('// 結 局 圖 鑑  (' + achieved.length + ' / 8)', '');
+
+  const grid = document.createElement('div');
+  grid.className = 'galleryGrid';
+
+  ALL.forEach(k => {
+    const item = document.createElement('div');
+    item.className = 'galleryItem';
+    const isAch = achieved.includes(k);
+    if(isAch){
+      item.classList.add('achieved');
+      const t = document.createElement('div');
+      t.className = 'galleryTitle';
+      t.textContent = ENDINGS[k].title;
+      const s = document.createElement('div');
+      s.className = 'gallerySub';
+      s.textContent = ENDINGS[k].sub;
+      const h = document.createElement('div');
+      h.className = 'galleryHint';
+      h.textContent = HINTS[k];
+      item.appendChild(t);
+      item.appendChild(s);
+      item.appendChild(h);
+    } else {
+      item.classList.add('locked');
+      const t = document.createElement('div');
+      t.className = 'galleryTitle locked';
+      t.textContent = '？ ？ ？';
+      const s = document.createElement('div');
+      s.className = 'gallerySub';
+      s.style.color = '#3f6d5e';
+      s.textContent = '未解鎖';
+      item.appendChild(t);
+      item.appendChild(s);
+    }
+    grid.appendChild(item);
+  });
+
+  $('overlayBody').appendChild(grid);
+
+  if(achieved.length === 8){
+    const sumBtn = document.createElement('button');
+    sumBtn.className = 'menuBtn';
+    sumBtn.style.marginTop = '18px';
+    sumBtn.innerHTML = '查 看 最 終 結 算<span class="sub">你已經看過所有結局了</span>';
+    sumBtn.onclick = () => { sfxClick(); showSummaryOverlay(); };
+    $('overlayBody').appendChild(sumBtn);
+  }
+}
+
+/* --- 最終結算畫面 --- */
+function showSummaryOverlay(){
+  openOverlay();
+  setOverlay('// 最 終 結 算', '');
+
+  const stat = document.createElement('div');
+  stat.className = 'summaryStat';
+  stat.innerHTML =
+    '<div class="big">8 / 8</div>' +
+    '<div class="sub">所有結局已達成</div>';
+  $('overlayBody').appendChild(stat);
+
+  const ALL = [
+    { key:'坦途', cond:'Know_Pw ≥ 70 · Trust_P ≥ 70 · Know_Wp ≥ 70 · Health_W > 20 · Kill_P < 40',
+      hint:'每天優先選擇「記憶」與「關懷」導向的問題。避免任何酷刑。讓他知道你正在想起來。' },
+    { key:'憎恨', cond:'Kill_P ≥ 90',
+      hint:'三天內盡可能選擇酷刑與高壓問題。當殺意到達 90 時，結局自動觸發。' },
+    { key:'虛妄', cond:'Grief_W ≥ 85 · Know_Pw < 50',
+      hint:'對 W 反覆施加殘酷對待，讓他的悲傷上升，但不要深入記憶。' },
+    { key:'深淵', cond:'GovSuspect ≥ 100',
+      hint:'反覆選擇會提高政府疑心的選項——例如偽造記錄、私藏配槍、不執行指令。' },
+    { key:'白鴿', cond:'Know_Pw ≥ 60 · Trust_P ≥ 60 · Health_W > 30（優先順位高於悲焰）',
+      hint:'記憶與信任要達標，同時保持他的健康。這個結局需要玩家在最後做出犧牲。' },
+    { key:'悲焰', cond:'Know_Pw ≥ 60 · Trust_P ≥ 60 · Health_W ≤ 30',
+      hint:'記憶與信任達標，但在前期使用過酷刑，讓他的健康低於 30。' },
+    { key:'遺憾', cond:'Know_Pw ≥ 60 · Health_W == 0',
+      hint:'讓他的健康歸零，但你的記憶已經復甦。太晚了。' },
+    { key:'未曾', cond:'Kill_P 中/高 · Trust_P < 30 · Know_Pw < 40（保底結局）',
+      hint:'什麼都不做。什麼都不問。什麼都不記得。讓 W 成為你人生中一個沒有名字的過客。' }
+  ];
+
+  ALL.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'summaryItem';
+    div.innerHTML =
+      '<div class="t">' + ENDINGS[item.key].title + ' — ' + ENDINGS[item.key].sub + '</div>' +
+      '<div class="h"><b style="color:#E6A100">判定條件：</b>' + item.cond + '<br>' +
+      '<b style="color:#E6A100">快速攻略：</b>' + item.hint + '</div>';
+    $('overlayBody').appendChild(div);
+  });
+
+  const tip = document.createElement('div');
+  tip.style.marginTop = '22px';
+  tip.style.padding = '14px 16px';
+  tip.style.border = '1px dashed rgba(230,161,0,.4)';
+  tip.style.color = '#E6A100';
+  tip.style.fontSize = 'var(--fs-small)';
+  tip.style.lineHeight = '1.8';
+  tip.style.letterSpacing = '1px';
+  tip.innerHTML = '<b>提示：</b>結局判定具有優先順序，越上面的結局越先被判定。例如若要拿到「悲焰」，就必須避免觸發更高優先的「坦途」與「白鴿」。';
+  $('overlayBody').appendChild(tip);
+}
+
+/* ============================================================
+   流程控制
+============================================================ */
+async function runDay(day){
+  if(!state.morningDone[day]){
+    await morningEvent(day);
+    state.morningDone[day] = true;
+    saveAuto();
+  }
+
+  if((day === 2 || day === 3) && !state.midDone[day]){
+    await midEvent(day);
+    state.midDone[day] = true;
+    saveAuto();
+  }
+
+  await questionPhase(day);
+
+  if((day === 1 || day === 2) && !state.eveningDone[day]){
+    await eveningEvent(day);
+    state.eveningDone[day] = true;
+    saveAuto();
+  }
+
+  if(day < 3 && state.Health_W > 0){
+    await nightEcho(day);
+    state.day++;
+    state.tortureToday = false;
+    updateHUD();
+    saveAuto();
+    await runDay(state.day);
+  } else {
+    await nightEcho(day);
+    await endingPhase();
+  }
+}
+
+async function startNewGame(){
+  const nm = ($('nameInput').value || '').trim();
+  resetState();
+  state.name = nm || '小白鼠';
+
+  $('nameScreen').style.transition = 'opacity 1.6s ease';
+  $('nameScreen').style.opacity = '0';
+  await sleep(1700);
+  $('nameScreen').style.display = 'none';
+
+  $('history').innerHTML = '';
+  $('observe').innerHTML = '';
+
+  updateHUD();
+  saveAuto();
+  await runDay(1);
+}
+
+async function continueFromAuto(){
+  const auto = loadAuto();
+  if(!auto){
+    alert('目前沒有自動存檔。');
+    return;
+  }
+  await loadAndRestore(auto);
+}
+
+/* ============================================================
+   標題畫面按鈕
+============================================================ */
+$('newGameBtn').onclick = () => {
+  ac();
+  // 如果已有自動存檔，確認是否覆蓋
+  if(loadAuto()){
+    if(!confirm('已有自動存檔。開始新遊戲會覆蓋現有進度，確定嗎？')) return;
+  }
+  startNewGame();
+};
+$('continueBtn').onclick = () => {
+  ac();
+  continueFromAuto();
+};
+$('titleGalleryBtn').onclick = () => {
+  ac();
+  openOverlay();
+  showGallery();
+};
+
+$('menuBtn').onclick = () => {
+  sfxClick();
+  openOverlay();
+  showMainMenu();
+};
+
+/* 名稱欄位 Enter */
+$('nameInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ ac(); $('newGameBtn').click(); }
+});
+
+/* 初始化按鈕狀態 */
+(function initTitle(){
+  const auto = loadAuto();
+  $('continueBtn').disabled = !auto;
+  $('nameInput').focus();
+})();
+
+/* 全域 Esc 關閉 overlay */
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && $('overlay').classList.contains('on')){
+    closeOverlay();
+  }
+});
+
+</script>
+</body>
+</html>
